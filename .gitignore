@@ -1,0 +1,52 @@
+## .NET specific
+bin/
+obj/
+*.user
+*.suo
+*.cache
+*.dll
+*.exe
+*.pdb
+*.log
+
+## Visual Studio
+.vs/
+.vscode/
+
+## Logs
+logs/
+*.log
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+
+## Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa]rm/
+[Aa]rm64/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+## Temporary files
+*.tmp
+*.temp
+*~
+
+## User-specific files
+*.rsuser
+*.userprefs
+*.userosscache
+
+## OS specific
+.DS_Store
+Thumbs.db

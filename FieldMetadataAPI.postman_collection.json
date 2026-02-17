@@ -1,0 +1,615 @@
+{
+	"info": {
+		"_postman_id": "a8b9c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d",
+		"name": "Field Metadata API",
+		"description": "Production-ready ASP.NET Core Web API for managing Field Metadata using .NET 10 and Dapper",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "12345678"
+	},
+	"item": [
+		{
+			"name": "Field Metadata",
+			"item": [
+				{
+					"name": "Get All Field Metadata (Paginated)",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata?pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							],
+							"query": [
+								{
+									"key": "pageNumber",
+									"value": "1",
+									"description": "Page number (default: 1)"
+								},
+								{
+									"key": "pageSize",
+									"value": "10",
+									"description": "Page size (default: 10, max: 100)"
+								}
+							]
+						},
+						"description": "Retrieves all active field metadata with pagination. Returns only records where IsActive = 1."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All Field Metadata with Values",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/with-values",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"with-values"
+							]
+						},
+						"description": "Retrieves all active field metadata with their associated check table values and passable values. Uses LEFT JOIN to include Check_Table_Values and Passable_Values data."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All - Filter by FieldName",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata?fieldName=CUSTOMER&pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							],
+							"query": [
+								{
+									"key": "fieldName",
+									"value": "CUSTOMER",
+									"description": "Filter by field name (partial match)"
+								},
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Filter field metadata by FieldName using partial match (LIKE query)."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All - Filter by TableGroup",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata?tableGroup=CUSTOMER&pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							],
+							"query": [
+								{
+									"key": "tableGroup",
+									"value": "CUSTOMER",
+									"description": "Filter by table group (exact match)"
+								},
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Filter field metadata by TableGroup using exact match."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All - Filter by DataType",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata?dataType=CHAR&pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							],
+							"query": [
+								{
+									"key": "dataType",
+									"value": "CHAR",
+									"description": "Filter by data type (exact match)"
+								},
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Filter field metadata by DataType using exact match."
+					},
+					"response": []
+				},
+				{
+					"name": "Get All - Combined Filters",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata?fieldName=CUSTOMER&tableGroup=CUSTOMER&dataType=CHAR&pageNumber=1&pageSize=10",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							],
+							"query": [
+								{
+									"key": "fieldName",
+									"value": "CUSTOMER"
+								},
+								{
+									"key": "tableGroup",
+									"value": "CUSTOMER"
+								},
+								{
+									"key": "dataType",
+									"value": "CHAR"
+								},
+								{
+									"key": "pageNumber",
+									"value": "1"
+								},
+								{
+									"key": "pageSize",
+									"value": "10"
+								}
+							]
+						},
+						"description": "Use multiple filters together."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Field Metadata by ID",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/CUSTOMER_ID",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"CUSTOMER_ID"
+							]
+						},
+						"description": "Retrieves a specific field metadata by FieldName (Primary Key)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Field Metadata",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fieldName\": \"EMAIL_ADDRESS\",\n  \"dataElement\": \"EMAIL\",\n  \"description\": \"Customer Email Address\",\n  \"keyField\": null,\n  \"checkTable\": null,\n  \"dataType\": \"CHAR\",\n  \"fieldLength\": 100,\n  \"decimals\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"CUSTOMER\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							]
+						},
+						"description": "Creates a new field metadata record. Note: Computed columns (ValidationType, IsMandatory, UIControlType) are set by the database and cannot be specified."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Field Metadata - With Key Field",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fieldName\": \"ACCOUNT_NUMBER\",\n  \"dataElement\": \"ACCNO\",\n  \"description\": \"Account Number\",\n  \"keyField\": \"X\",\n  \"checkTable\": null,\n  \"dataType\": \"CHAR\",\n  \"fieldLength\": 20,\n  \"decimals\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"ACCOUNT\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							]
+						},
+						"description": "Creates a field with KeyField = 'X', which will automatically set IsMandatory = true (computed)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Field Metadata - With Dropdown",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fieldName\": \"REGION_CODE\",\n  \"dataElement\": \"REGIO\",\n  \"description\": \"Region Code\",\n  \"keyField\": null,\n  \"checkTable\": \"T005S\",\n  \"dataType\": \"CHAR\",\n  \"fieldLength\": 3,\n  \"decimals\": null,\n  \"hasDropdown\": \"X\",\n  \"tableGroup\": \"ADDRESS\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							]
+						},
+						"description": "Creates a field with HasDropdown = 'X' and CheckTable, which will set ValidationType = 'LOOKUP' and UIControlType = 'DROPDOWN' (computed)."
+					},
+					"response": []
+				},
+				{
+					"name": "Create Field Metadata - Date Field",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"fieldName\": \"BIRTH_DATE\",\n  \"dataElement\": \"GBDAT\",\n  \"description\": \"Date of Birth\",\n  \"keyField\": null,\n  \"checkTable\": null,\n  \"dataType\": \"DATS\",\n  \"fieldLength\": 8,\n  \"decimals\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"CUSTOMER\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata"
+							]
+						},
+						"description": "Creates a date field (DataType = 'DATS'), which will set ValidationType = 'DATE' and UIControlType = 'DATEPICKER' (computed)."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Field Metadata",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Updated Email Address Description\",\n  \"checkTable\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"CONTACT\",\n  \"isActive\": true\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/EMAIL_ADDRESS",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"EMAIL_ADDRESS"
+							]
+						},
+						"description": "Updates a field metadata record. Only editable fields can be updated: Description, CheckTable, HasDropdown, TableGroup, IsActive."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Field Metadata - Deactivate",
+					"request": {
+						"method": "PUT",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"description\": \"Updated Description\",\n  \"checkTable\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"CUSTOMER\",\n  \"isActive\": false\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/EMAIL_ADDRESS",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"EMAIL_ADDRESS"
+							]
+						},
+						"description": "Update to deactivate a field by setting isActive to false."
+					},
+					"response": []
+				},
+				{
+					"name": "Bulk Update IsMandatory",
+					"request": {
+						"method": "PATCH",
+						"header": [
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"updates\": [\n    {\n      \"fieldName\": \"/BEV1/LULDEGRP\",\n      \"isMandatory\": true\n    },\n    {\n      \"fieldName\": \"/BEV1/LULEINH\",\n      \"isMandatory\": false\n    },\n    {\n      \"fieldName\": \"/CWM/TARA\",\n      \"isMandatory\": true\n    }\n  ]\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/bulk-update-mandatory",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"bulk-update-mandatory"
+							]
+						},
+						"description": "Bulk update the IsMandatory field for multiple field metadata records. Each field can have its own IsMandatory value (true or false). The endpoint updates the KeyField column (setting it to 'X' for true, NULL for false), which automatically updates the computed IsMandatory column."
+					},
+					"response": []
+				},
+				{
+					"name": "Delete Field Metadata (Soft Delete)",
+					"request": {
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/api/v1/field-metadata/EMAIL_ADDRESS",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"v1",
+								"field-metadata",
+								"EMAIL_ADDRESS"
+							]
+						},
+						"description": "Soft deletes a field metadata record by setting IsActive = 0. The record remains in the database but won't be returned by GET requests."
+					},
+					"response": []
+				}
+			],
+			"description": "CRUD operations for Field Metadata management"
+		},
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/health",
+					"host": [
+						"{{baseUrl}}"
+					],
+					"path": [
+						"health"
+					]
+				},
+				"description": "Health check endpoint to verify API is running."
+			},
+			"response": []
+		}
+	],
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://localhost:5001",
+			"type": "string"
+		}
+	]
+}
