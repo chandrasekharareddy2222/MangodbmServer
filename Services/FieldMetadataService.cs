@@ -1,6 +1,8 @@
 using FieldMetadataAPI.DTOs;
 using FieldMetadataAPI.Models;
 using FieldMetadataAPI.Repositories;
+using FluentValidation;
+using System.Text;
 
 namespace FieldMetadataAPI.Services
 {
@@ -16,6 +18,7 @@ namespace FieldMetadataAPI.Services
         Task<bool> DeleteAsync(string fieldName);
         Task<List<FieldMetadataWithValuesDto>> GetAllWithValuesAsync();
         Task<int> BulkUpdateMandatoryAsync(BulkUpdateMandatoryDto bulkUpdateDto);
+        Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator);
     }
 
     /// <summary>
@@ -259,6 +262,239 @@ namespace FieldMetadataAPI.Services
                 rowsAffected, bulkUpdateDto.Updates.Count, skippedCount);
 
             return rowsAffected;
+        }
+
+        public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator)
+        {
+            _logger.LogInformation("Starting CSV import with tracking for {Count} records", rows.Count);
+
+            var response = new CsvImportResponse
+            {
+                TotalRecords = rows.Count,
+                ResultFileName = $"field_metadata_import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv"
+            };
+
+            // Get all existing field names to check for duplicates
+            var existingFields = await _repository.GetAllFieldNamesAsync();
+            var existingFieldsSet = new HashSet<string>(existingFields.Select(f => f.ToUpper()), StringComparer.OrdinalIgnoreCase);
+
+            // Process each row
+            foreach (var row in rows)
+            {
+                var result = new ImportRowResult { FieldName = row.Field };
+
+                try
+                {
+                    // Check if field name is provided
+                    if (string.IsNullOrWhiteSpace(row.Field))
+                    {
+                        result.ImportStatus = "FAILED";
+                        result.ErrorCode = "VALIDATION_ERROR";
+                        result.ErrorMessage = "Field name is required";
+                        response.Failed++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                    string normalizedFieldName = row.Field.Trim().ToUpper();
+
+                    // Check if row was already successfully imported (re-upload scenario)
+                    if (result.ImportStatus == "SUCCESS")
+                    {
+                        result.ImportStatus = "SKIPPED";
+                        result.ErrorCode = "";
+                        result.ErrorMessage = "Record previously imported successfully";
+                        response.Skipped++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                    // Check for duplicate in database
+                    if (existingFieldsSet.Contains(normalizedFieldName))
+                    {
+                        result.ImportStatus = "FAILED";
+                        result.ErrorCode = "DUPLICATE_FIELD";
+                        result.ErrorMessage = $"Field metadata with FieldName '{normalizedFieldName}' already exists";
+                        response.Failed++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                    // Transform and validate the record
+                    var createDto = TransformCsvRowToDto(row, normalizedFieldName);
+
+                    var validationResult = await validator.ValidateAsync(createDto);
+                    if (!validationResult.IsValid)
+                    {
+                        var validationErrors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                        result.ImportStatus = "FAILED";
+                        result.ErrorCode = "VALIDATION_ERROR";
+                        result.ErrorMessage = validationErrors;
+                        response.Failed++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                    // Attempt to insert
+                    await _repository.CreateAsync(MapDtoToModel(createDto));
+                    existingFieldsSet.Add(normalizedFieldName); // Add to local set to prevent duplicates within same batch
+
+                    result.ImportStatus = "SUCCESS";
+                    result.ErrorCode = "";
+                    result.ErrorMessage = "";
+                    response.Inserted++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unexpected error processing row {FieldName}", row.Field);
+                    result.ImportStatus = "FAILED";
+                    result.ErrorCode = "SYSTEM_ERROR";
+                    result.ErrorMessage = $"Unexpected error: {ex.Message}";
+                    response.Failed++;
+                }
+
+                row.Result = result;
+                response.RowResults.Add(result);
+            }
+
+            // Generate result CSV file
+            response.ResultFileContent = GenerateResultCsv(rows);
+            response.Message = $"CSV import completed. {response.Inserted} record(s) inserted, {response.Failed} failed, {response.Skipped} skipped.";
+
+            _logger.LogInformation("CSV import completed: Inserted={Inserted}, Failed={Failed}, Skipped={Skipped}", 
+                response.Inserted, response.Failed, response.Skipped);
+
+            return response;
+        }
+
+        private CreateFieldMetadataDto TransformCsvRowToDto(CsvImportRow row, string normalizedFieldName)
+        {
+            string? dataElement = string.IsNullOrWhiteSpace(row.DataElement?.Trim()) ? null : row.DataElement.Trim();
+            string? description = string.IsNullOrWhiteSpace(row.Description?.Trim()) ? null : row.Description.Trim();
+            string? keyField = row.KeyField?.Trim().ToUpper() == "X" ? "X" : null;
+            string? checkTable = string.IsNullOrWhiteSpace(row.Checktable?.Trim()) ? null : row.Checktable.Trim();
+            string? dataType = row.Datatype?.Trim().ToUpper() ?? "";
+            int fieldLength = int.TryParse(row.Length, out var len) ? len : 0;
+            int decimals = int.TryParse(row.Decimals, out var dec) ? dec : 0;
+
+            // Handle HasDropdown: if PossibleValues contains "Possible values", set to 'X'
+            string? hasDropdown = null;
+            if (!string.IsNullOrWhiteSpace(row.PossibleValues?.Trim()))
+            {
+                string normalized = row.PossibleValues.Trim().ToLower();
+                if (normalized == "possible values" || normalized == "x")
+                {
+                    hasDropdown = "X";
+                }
+            }
+
+            // Auto-categorize TableGroup
+            string tableGroup = AutoCategorizeTableGroup(normalizedFieldName, dataType, checkTable);
+
+            return new CreateFieldMetadataDto
+            {
+                FieldName = normalizedFieldName,
+                DataElement = dataElement,
+                Description = description,
+                KeyField = keyField,
+                CheckTable = checkTable,
+                DataType = dataType,
+                FieldLength = fieldLength,
+                Decimals = decimals,
+                HasDropdown = hasDropdown,
+                TableGroup = tableGroup
+            };
+        }
+
+        private string AutoCategorizeTableGroup(string fieldName, string dataType, string? checkTable)
+        {
+            if (string.IsNullOrWhiteSpace(dataType))
+                return "General Attributes";
+
+            if (dataType == "QUAN" || dataType == "DEC" || dataType == "INT2")
+                return "Quantities";
+
+            if (dataType == "DATS")
+                return "Dates";
+
+            if (dataType == "UNIT")
+                return "Units of Measure";
+
+            if (!string.IsNullOrWhiteSpace(checkTable) && checkTable.StartsWith("T", StringComparison.OrdinalIgnoreCase))
+                return "Master Data";
+
+            if (fieldName.Contains("FIBER", StringComparison.OrdinalIgnoreCase))
+                return "Textile Composition";
+
+            if (fieldName.StartsWith("/VSO", StringComparison.OrdinalIgnoreCase))
+                return "Vehicle Space Optimization";
+
+            if (fieldName.StartsWith("/CWM", StringComparison.OrdinalIgnoreCase))
+                return "Catch Weight Management";
+
+            if (fieldName.StartsWith("/BEV", StringComparison.OrdinalIgnoreCase))
+                return "Beverage Industry";
+
+            return "General Attributes";
+        }
+
+        private FieldMetadata MapDtoToModel(CreateFieldMetadataDto dto)
+        {
+            return new FieldMetadata
+            {
+                FieldName = dto.FieldName,
+                DataElement = dto.DataElement,
+                Description = dto.Description,
+                KeyField = dto.KeyField,
+                CheckTable = dto.CheckTable,
+                DataType = dto.DataType,
+                FieldLength = dto.FieldLength,
+                Decimals = dto.Decimals,
+                HasDropdown = dto.HasDropdown,
+                TableGroup = dto.TableGroup
+            };
+        }
+
+        private byte[] GenerateResultCsv(List<CsvImportRow> rows)
+        {
+            var sb = new StringBuilder();
+
+            // Write header with original columns + tracking columns
+            sb.AppendLine("Field,Data element,Description,Key Field,Checktable,Datatype,Length,Decimals,Possible values,ImportStatus,ErrorCode,ErrorMessage");
+
+            // Write rows with their results
+            foreach (var row in rows)
+            {
+                var fieldEscaped = EscapeCsvField(row.Field);
+                var dataElementEscaped = EscapeCsvField(row.DataElement);
+                var descriptionEscaped = EscapeCsvField(row.Description);
+                var keyFieldEscaped = EscapeCsvField(row.KeyField);
+                var checktableEscaped = EscapeCsvField(row.Checktable);
+                var datatypeEscaped = EscapeCsvField(row.Datatype);
+                var lengthEscaped = EscapeCsvField(row.Length);
+                var decimalsEscaped = EscapeCsvField(row.Decimals);
+                var possibleValuesEscaped = EscapeCsvField(row.PossibleValues);
+                var statusEscaped = EscapeCsvField(row.Result.ImportStatus);
+                var errorCodeEscaped = EscapeCsvField(row.Result.ErrorCode);
+                var errorMessageEscaped = EscapeCsvField(row.Result.ErrorMessage);
+
+                sb.AppendLine($"{fieldEscaped},{dataElementEscaped},{descriptionEscaped},{keyFieldEscaped},{checktableEscaped},{datatypeEscaped},{lengthEscaped},{decimalsEscaped},{possibleValuesEscaped},{statusEscaped},{errorCodeEscaped},{errorMessageEscaped}");
+            }
+
+            return Encoding.UTF8.GetBytes(sb.ToString());
+        }
+
+        private string EscapeCsvField(string? value)
+        {
+            if (string.IsNullOrEmpty(value))
+                return "";
+
+            if (value.Contains("\"") || value.Contains(",") || value.Contains("\n"))
+            {
+                return $"\"{value.Replace("\"", "\"\"")}\"";
+            }
+
+            return value;
         }
     }
 }

@@ -19,6 +19,7 @@ namespace FieldMetadataAPI.Repositories
         Task<bool> ExistsAsync(string fieldName);
         Task<Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>> GetAllWithValuesAsync();
         Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates);
+        Task<List<string>> GetAllFieldNamesAsync();
     }
 
     /// <summary>
@@ -356,6 +357,22 @@ namespace FieldMetadataAPI.Repositories
             _logger.LogInformation("Successfully updated {RowsAffected} record(s)", totalRowsAffected);
 
             return totalRowsAffected;
+        }
+
+        public async Task<List<string>> GetAllFieldNamesAsync()
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            
+            var sql = @"
+                SELECT FieldName
+                FROM Field_Metadata
+                WHERE IsActive = 1
+                ORDER BY FieldName";
+
+            _logger.LogInformation("Fetching all field names for duplicate detection");
+
+            var fieldNames = await connection.QueryAsync<string>(sql);
+            return fieldNames.ToList();
         }
     }
 }

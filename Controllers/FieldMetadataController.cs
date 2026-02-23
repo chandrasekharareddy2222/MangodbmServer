@@ -1,7 +1,12 @@
 using Microsoft.AspNetCore.Mvc;
 using FieldMetadataAPI.DTOs;
 using FieldMetadataAPI.Services;
+using FieldMetadataAPI.Mappings;
+using FieldMetadataAPI.Models;
 using FluentValidation;
+using CsvHelper;
+using CsvHelper.Configuration;
+using System.Globalization;
 
 namespace FieldMetadataAPI.Controllers
 {
@@ -201,6 +206,89 @@ namespace FieldMetadataAPI.Controllers
             }
 
             return Ok(ApiResponse<object?>.SuccessResponse(null, "Field metadata deleted successfully"));
+        }
+
+        /// <summary>
+        /// Import field metadata from a CSV file
+        /// </summary>
+        /// <param name="file">CSV file containing field metadata records</param>
+        /// <returns>Import summary with success/failure counts</returns>
+        [HttpPost("import-csv")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ImportCsv(IFormFile file)
+        {
+            _logger.LogInformation("POST request received to import CSV file: {FileName}", file?.FileName);
+
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse("No file provided or file is empty"));
+            }
+
+            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            {
+                return BadRequest(ApiResponse<object>.ErrorResponse("File must be a CSV file"));
+            }
+
+            try
+            {
+                var csvRows = new List<CsvImportRow>();
+
+                using (var stream = file.OpenReadStream())
+                using (var reader = new StreamReader(stream))
+                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+                {
+                    csv.Context.RegisterClassMap<CsvImportRowMap>();
+                    try
+                    {
+                        csvRows = csv.GetRecords<CsvImportRow>().ToList();
+                    }
+                    catch (CsvHelper.BadDataException ex)
+                    {
+                        _logger.LogError(ex, "CSV header validation failed");
+                        return BadRequest(ApiResponse<object>.ErrorResponse($"CSV header format error: {ex.Message}"));
+                    }
+                }
+
+                if (csvRows.Count == 0)
+                {
+                    return BadRequest(ApiResponse<object>.ErrorResponse("CSV file contains no records"));
+                }
+
+                _logger.LogInformation("CSV file parsed successfully. Total records: {Count}", csvRows.Count);
+
+                // Call service to process CSV with tracking
+                var importResponse = await _service.ImportCsvWithTrackingAsync(csvRows, _createValidator);
+
+                _logger.LogInformation("CSV import completed. Inserted: {Inserted}, Failed: {Failed}, Skipped: {Skipped}", 
+                    importResponse.Inserted, importResponse.Failed, importResponse.Skipped);
+
+                // Return JSON response with result file content as base64
+                return Ok(ApiResponse<object>.SuccessResponse(
+                    new
+                    {
+                        totalRecords = importResponse.TotalRecords,
+                        inserted = importResponse.Inserted,
+                        failed = importResponse.Failed,
+                        skipped = importResponse.Skipped,
+                        resultFileName = $"import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv",
+                        resultFileContent = Convert.ToBase64String(importResponse.ResultFileContent),
+                        rowResults = importResponse.RowResults.Select(r => new
+                        {
+                            fieldName = r.FieldName,
+                            importStatus = r.ImportStatus,
+                            errorCode = r.ErrorCode,
+                            errorMessage = r.ErrorMessage
+                        }).ToList()
+                    },
+                    $"CSV import completed successfully. {importResponse.Inserted} record(s) inserted, {importResponse.Failed} failed, {importResponse.Skipped} skipped."
+                ));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error importing CSV file: {FileName}", file.FileName);
+                return BadRequest(ApiResponse<object>.ErrorResponse($"Error processing CSV file: {ex.Message}"));
+            }
         }
     }
 }

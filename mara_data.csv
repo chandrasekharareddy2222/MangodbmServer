@@ -1,0 +1,215 @@
+﻿Field,Data element,Description,Key Field,Checktable,Datatype,Length,Decimals,Possible values
+MATNR,MATNR,Material Number,X,,CHAR,18,0,
+ERSDA,ERSDA,Created On,,,DATS,8,0,
+ERNAM,ERNAM,Name of Person who Created the Object,,,CHAR,12,0,
+LAEDA,LAEDA,Date of Last Change,,,DATS,8,0,
+AENAM,AENAM,Name of Person Who Changed Object,,,CHAR,12,0,
+VPSTA,VPSTA,Maintenance status of complete material,,,CHAR,15,0,
+PSTAT,PSTAT_D,Maintenance status,,,CHAR,15,0,
+LVORM,LVOMA,Flag Material for Deletion at Client Level,,,CHAR,1,0,Possible values
+MTART,MTART,Material Type,,T134,CHAR,4,0,
+MBRSH,MBRSH,Industry sector,,T137,CHAR,1,0,
+MATKL,MATKL,Material Group,,T023,CHAR,9,0,
+BISMT,BISMT,Old material number,,,CHAR,18,0,
+MEINS,MEINS,Base Unit of Measure,,T006,UNIT,3,0,
+BSTME,BSTME,Purchase Order Unit of Measure,,T006,UNIT,3,0,
+ZEINR,DZEINR,Document number (without document management system),,,CHAR,22,0,
+ZEIAR,DZEIAR,Document type (without Document Management system),,,CHAR,3,0,
+ZEIVR,DZEIVR,Document version (without Document Management system),,,CHAR,2,0,
+ZEIFO,DZEIFO,Page format of document (without Document Management system),,,CHAR,4,0,
+AESZN,AESZN,Document change number (without document management system),,,CHAR,6,0,
+BLATT,BLATT,Page number of document (without Document Management system),,,CHAR,3,0,
+BLANZ,BLANZ,Number of sheets (without Document Management system),,,NUMC,3,0,
+FERTH,FERTH,Production/inspection memo,,,CHAR,18,0,
+FORMT,FORMT,Page Format of Production Memo,,,CHAR,4,0,
+GROES,GROES,Size/dimensions,,,CHAR,32,0,
+WRKST,WRKST,Basic Material,,TWSPR,CHAR,48,0,
+NORMT,NORMT,Industry Standard Description (such as ANSI or ISO),,,CHAR,18,0,
+LABOR,LABOR,Laboratory/design office,,T024L,CHAR,3,0,
+EKWSL,EKWSL,Purchasing Value Key,,T405,CHAR,4,0,
+BRGEW,BRGEW,Gross Weight,,,QUAN,13,3,
+NTGEW,NTGEW,Net Weight,,,QUAN,13,3,
+GEWEI,GEWEI,Weight Unit,,T006,UNIT,3,0,
+VOLUM,VOLUM,Volume,,,QUAN,13,3,
+VOLEH,VOLEH,Volume unit,,T006,UNIT,3,0,
+BEHVO,BEHVO,Container requirements,,T144,CHAR,2,0,
+RAUBE,RAUBE,Storage conditions,,T142,CHAR,2,0,
+TEMPB,TEMPB,Temperature conditions indicator,,T143,CHAR,2,0,
+DISST,DISST,Low-Level Code,,,CHAR,3,0,
+TRAGR,TRAGR,Transportation Group,,TTGR,CHAR,4,0,
+STOFF,STOFF,Hazardous material number,,MGEF,CHAR,18,0,
+SPART,SPART,Division,,TSPA,CHAR,2,0,
+KUNNR,WETTB,Competitor,,V_KNA1WETT,CHAR,10,0,
+EANNR,EANNR,European Article Number (EAN) - obsolete!!!!!,,,CHAR,13,0,
+WESCH,WESCH,Quantity: Number of GR/GI slips to be printed,,,QUAN,13,3,
+BWVOR,BWVOR,Procurement rule,,T6WP1,CHAR,1,0,
+BWSCL,BWSCL,Source of Supply,,TMBW1,CHAR,1,0,
+SAISO,SAISO,Season Category,,T6WSP,CHAR,4,0,
+ETIAR,ETIAR,Label type,,T6WP3,CHAR,2,0,
+ETIFO,ETIFO,Label form,,T6WP4,CHAR,2,0,
+ENTAR,DUMMYENTAR,Deactivated,,,CHAR,1,0,
+EAN11,EAN11,International Article Number (EAN/UPC),,,CHAR,18,0,
+NUMTP,NUMTP,Category of International Article Number (EAN),,TNTP,CHAR,2,0,
+LAENG,LAENG,Length,,,QUAN,13,3,
+BREIT,BREIT,Width,,,QUAN,13,3,
+HOEHE,HOEHE,Height,,,QUAN,13,3,
+MEABM,MEABM,Unit of Dimension for Length/Width/Height,,T006,UNIT,3,0,
+PRDHA,PRODH_D,Product hierarchy,,T179,CHAR,18,0,
+AEKLK,CK_AEKLK,Stock Transfer Net Change Costing,,,CHAR,1,0,Possible values
+CADKZ,CADKZ,CAD Indicator,,,CHAR,1,0,Possible values
+QMPUR,QMPUR,QM in Procurement is Active,,,CHAR,1,0,Possible values
+ERGEW,ERGEW,Allowed packaging weight,,,QUAN,13,3,
+ERGEI,ERGEI,Unit of weight (allowed packaging weight),,T006,UNIT,3,0,
+ERVOL,ERVOL,Allowed packaging volume,,,QUAN,13,3,
+ERVOE,ERVOE,Volume unit (allowed packaging volume),,T006,UNIT,3,0,
+GEWTO,GEWTO,Excess Weight Tolerance for Handling unit,,,DEC,3,1,
+VOLTO,VOLTO,Excess Volume Tolerance of the Handling Unit,,,DEC,3,1,
+VABME,VABME,Variable Purchase Order Unit Active,,,CHAR,1,0,Possible values
+KZREV,KZREV,Revision Level Has Been Assigned to the Material,,,CHAR,1,0,Possible values
+KZKFG,KZKFG,Configurable Material,,,CHAR,1,0,Possible values
+XCHPF,XCHPF,Batch management requirement indicator,,,CHAR,1,0,Possible values
+VHART,VHIART,Packaging Material Type,,TVTY,CHAR,4,0,
+FUELG,FUELG,Maximum level (by volume),,,DEC,3,0,
+STFAK,STFAK,Stacking factor,,,INT2,5,0,
+MAGRV,MAGRV,Material Group: Packaging Materials,,TVEGR,CHAR,4,0,
+BEGRU,BEGRU,Authorization Group,,,CHAR,4,0,
+DATAB,DATAB,Valid-From Date,,,DATS,8,0,
+LIQDT,LIQDT,Deletion date,,,DATS,8,0,
+SAISJ,SAISJ,Season Year,,,CHAR,4,0,
+PLGTP,PLGTP,Price Band Category,,TWPT,CHAR,2,0,
+MLGUT,W_MITLEERG,Empties Bill of Material,,,CHAR,1,0,Possible values
+EXTWG,EXTWG,External Material Group,,TWEW,CHAR,18,0,
+SATNR,SATNR,Cross-Plant Configurable Material,,MARA,CHAR,18,0,
+ATTYP,ATTYP,Material Category,,,CHAR,2,0,Possible values
+KZKUP,KZKUPMAT,Indicator: Material can be co-product,,,CHAR,1,0,Possible values
+KZNFM,KZNFM,Indicator: The material has a follow-up material,,,CHAR,1,0,Possible values
+PMATA,PMATN,Pricing Reference Material,,MARA,CHAR,18,0,
+MSTAE,MSTAE,Cross-Plant Material Status,,T141,CHAR,2,0,
+MSTAV,MSTAV,Cross-distribution-chain material status,,TVMS,CHAR,2,0,
+MSTDE,MSTDE,Date from which the cross-plant material status is valid,,,DATS,8,0,
+MSTDV,MSTDV,Date from which the X-distr.-chain material status is valid,,,DATS,8,0,
+TAKLV,TAKLV,Tax classification of the material,,TSKM,CHAR,1,0,
+RBNRM,RBNR,Catalog Profile,,T352B,CHAR,9,0,
+MHDRZ,MHDRZ,Minimum Remaining Shelf Life,,,DEC,4,0,
+MHDHB,MHDHB,Total shelf life,,,DEC,4,0,
+MHDLP,MHDLP,Storage percentage,,,DEC,3,0,
+INHME,INHME,Content unit,,T006,UNIT,3,0,
+INHAL,INHAL,Net contents,,,QUAN,13,3,
+VPREH,VPREH,Comparison price unit,,,DEC,5,0,
+ETIAG,ETIAG,IS-R Labeling: material grouping (deactivated in 4.0),,TWEA,CHAR,18,0,
+INHBR,INHBR,Gross contents,,,QUAN,13,3,
+CMETH,OIB_CMETH,Quantity Conversion Method,,,CHAR,1,0,Possible values
+CUOBF,CUOBM,Internal object number,,,NUMC,18,0,
+KZUMW,KZUMW,Environmentally Relevant,,,CHAR,1,0,Possible values
+KOSCH,KOSCH,Product allocation determination procedure,,T190S,CHAR,18,0,
+SPROF,SPROF,Pricing profile for variants,,,CHAR,1,0,Possible values
+NRFHG,NRFHG,Material qualifies for discount in kind,,,CHAR,1,0,Possible values
+MFRPN,MFRPN,Manufacturer Part Number,,,CHAR,40,0,
+MFRNR,MFRNR,Number of a Manufacturer,,LFA1,CHAR,10,0,
+BMATN,MPMAT,Number of firm's own (internal) inventory-managed material,,MARA,CHAR,18,0,
+MPROF,MPROF,Manufacturer Part Profile,,TMPPF,CHAR,4,0,
+KZWSM,KZWSO,Units of measure usage,,,CHAR,1,0,Possible values
+SAITY,SAITY,Rollout in a Season,,T6WSA,CHAR,2,0,
+PROFL,ADGE_PROFL,Dangerous Goods Indicator Profile,,TDG41,CHAR,3,0,
+IHIVI,ADGE_IHIVI,Indicator: Highly Viscous,,,CHAR,1,0,Possible values
+ILOOS,ADGE_ILOOS,Indicator: In Bulk/Liquid,,,CHAR,1,0,Possible values
+SERLV,SERLV,Level of Explicitness for Serial Number,,,CHAR,1,0,Possible values
+KZGVH,KZGVH,Packaging Material is Closed Packaging,,,CHAR,1,0,Possible values
+XGCHP,XGCHP,Indicator: Approved batch record required,,,CHAR,1,0,Possible values
+KZEFF,CC_MTEFF,Assign effectivity parameter values/ override change numbers,,,CHAR,1,0,Possible values
+COMPL,CSCP_COMP_LVL,Material completion level,,TCSCP_COMP_LVL,NUMC,2,0,
+IPRKZ,DATTP,Period Indicator for Shelf Life Expiration Date,,,CHAR,1,0,
+RDMHD,RDMHD,Rounding rule for calculation of SLED,,,CHAR,1,0,Possible values
+PRZUS,PRZUS,Indicator: Product composition printed on packaging,,,CHAR,1,0,Possible values
+MTPOS_MARA,MTPOS_MARA,General item category group,,TPTM,CHAR,4,0,
+BFLME,BFLME,Generic Material with Logistical Variants,,,CHAR,1,0,Possible values
+MATFI,MATFI,Material Is Locked,,,CHAR,1,0,Possible values
+CMREL,DE_CM_RELEVANCE_FLAG,Relevant for Configuration Management,,,CHAR,1,0,Possible values
+BBTYP,BBTYP,Assortment List Type,,,CHAR,1,0,
+SLED_BBD,SLED_BBD,Expiration Date,,,CHAR,1,0,Possible values
+GTIN_VARIANT,GTIN_VARIANT,Global Trade Item Number Variant,,,CHAR,2,0,
+GENNR,WSTR_SATNR_PP,Material Number of the Generic Material in Prepack Materials,,MARA,CHAR,18,0,
+RMATP,PL_RMATP,Reference material for materials packed in same way,,MARA,CHAR,18,0,
+GDS_RELEVANT,GDS_RELEVANT,Indicator: Global Data Synchronization-Relevant,,,CHAR,1,0,Possible values
+WEORA,WEORA,Acceptance At Origin,,,CHAR,1,0,Possible values
+HUTYP_DFLT,CIFHUTYPDF,Standard HU Type,,THUTYP,CHAR,4,0,
+PILFERABLE,CIFPILFRBL,Pilferable,,,CHAR,1,0,Possible values
+WHSTC,CIFWHSTC,Warehouse Storage Condition,,TWHSTC,CHAR,2,0,
+WHMATGR,CIFWHMATGR,Warehouse Material Group,,TWHMATGR,CHAR,4,0,
+HNDLCODE,CIFHDLCODE,Handling Indicator,,THNDLCD,CHAR,4,0,
+HAZMAT,CIFHAZMAT,Relevant for Hazardous Substances,,,CHAR,1,0,Possible values
+HUTYP,CIFHUTYP,Handling Unit Type,,THUTYP,CHAR,4,0,
+TARE_VAR,CIFTAREVAR,Variable Tare Weight,,,CHAR,1,0,Possible values
+MAXC,CIFMAXC,Maximum Allowed Capacity of Packaging Material,,,DEC,15,3,
+MAXC_TOL,CIFMAXCTOL,Overcapacity Tolerance of the Handling Unit,,,DEC,3,1,
+MAXL,CIFMAXL,Maximum Packing Length of Packaging Material,,,QUAN,15,3,
+MAXB,CIFMAXB,Maximum Packing Width of Packaging Material,,,QUAN,15,3,
+MAXH,CIFMAXH,Maximum Packing Height of Packaging Material,,,QUAN,15,3,
+MAXDIM_UOM,CIFMAXDUOM,Unit of Measure for Maximum Packing Length/Width/Height,,T006,UNIT,3,0,
+HERKL,HERKL,Country of origin of the material,,T005,CHAR,3,0,
+MFRGR,MFRGR,Material freight group,,TMFG,CHAR,8,0,
+QQTIME,CIFQQTIME,Quarantine Period,,,QUAN,3,0,
+QQTIMEUOM,CIFQQTIMEUOM,Time Unit for Quarantine Period,,T006,UNIT,3,0,
+QGRP,CIFQGRP,Quality Inspection Group,,TQGRP,CHAR,4,0,
+SERIAL,CIFSERIAL,Serial Number Profile,,TSERIAL,CHAR,4,0,
+PS_SMARTFORM,CIFPSSFNAME,Form Name,,STXFADM,CHAR,30,0,
+LOGUNIT,CIFLOGUNIT,EWM CW: Logistics Unit of Measure,,MARM,UNIT,3,0,
+CWQREL,CIFCWQREL,EWM CW: Material Is a Catch Weight Material,,,CHAR,1,0,Possible values
+CWQPROC,CIFCWQPROC,EWM CW: Catch Weight Profile for Entering CW Quantity,,TCWQPROC,CHAR,2,0,
+CWQTOLGR,CIFCWQTOLGR,EWM-CW: Catch Weight Tolerance Group for EWM,,TCWQTOLGR,CHAR,9,0,
+ADPROF,CIFADPROF,Adjustment Profile,,TAPROF,CHAR,3,0,
+IPMIPPRODUCT,CRM_PRODUCT_ID_IP,ID for an Intellectual Property (CRM Product),,,CHAR,40,0,
+ALLOW_PMAT_IGNO,WPM_ALLOW_PMAT_IGNO_MAT,Variant Price Allowed (for Material Master),,,CHAR,1,0,Possible values
+MEDIUM,MEDIU,Medium,,T372M,CHAR,6,0,
+COMMODITY,TBA_STOEFFCHEN,Physical Commodity,,TBAC_PHYSCOMM,CHAR,18,0,
+ANIMAL_ORIGIN,WRF_ANIMAL_ORIGIN_FLAG,Indicator: Contains Non-Textile Parts of Animal Origin,,,CHAR,1,0,Possible values
+TEXTILE_COMP_IND,WRF_TEXTL_COMP_IND,Indicator: New Textile Composition Function,,,CHAR,1,0,Possible values
+ANP,J_1BANP,ANP Code,,J_1BTANP,NUMC,9,0,
+/BEV1/LULEINH,/BEV1/LULEINH,Loading Units,,,NUMC,8,0,
+/BEV1/LULDEGRP,/BEV1/LULDEGRP,Loading Unit Group: IS Beverage,,/BEV1/LUT906,CHAR,3,0,
+/BEV1/NESTRUCCAT,/BEV1/NESTRUC_CAT,Structure Category for Material Relationship,,,CHAR,1,0,Possible values
+/CWM/XCWMAT,/CWM/XCWMAT,Material Is Activated for Catch Weight,,,CHAR,1,0,Possible values
+/CWM/VALUM,/CWM/VALUM,Valuation Unit of Measure,,,UNIT,3,0,
+/CWM/TOLGR,/CWM/TOLGR,Tolerance Group for Catch Weight Management,,/CWM/TOLGROUP,CHAR,9,0,
+/CWM/TARA,/CWM/TARA,Consider Complete Tare for each Reference Unit of Measure,,,CHAR,1,0,Possible values
+/CWM/TARUM,/CWM/TARUM,Reference Unit of Measure for the TARE Calculation,,T006,UNIT,3,0,
+/DSD/SL_TOLTYP,/DSD/SL_TOLTYP_ID,Tolerance Type ID,,/DSD/SL_TGTYP,CHAR,4,0,
+/DSD/SV_CNT_GRP,/DSD/SV_COUNT_GROUP,Counting Group,,/DSD/SV_CNTGR,CHAR,10,0,
+/DSD/VC_GROUP,/DSD/VC_GROUP,DSD Grouping,,/DSD/VC_GRP,CHAR,6,0,
+/VSO/R_TILT_IND,/VSO/M_TILT_IND,Material may be Tilted (Vehicle Space Optimization),,,CHAR,1,0,Possible values
+/VSO/R_STACK_IND,/VSO/M_STACK_IND,Stacking not Allowed (VSO),,,CHAR,1,0,Possible values
+/VSO/R_BOT_IND,/VSO/M_BOTTOM_IND,Bottom Layer (Vehicle Space Optimization),,,CHAR,1,0,Possible values
+/VSO/R_TOP_IND,/VSO/M_TOP_IND,Top Layer (VSO),,,CHAR,1,0,Possible values
+/VSO/R_STACK_NO,/VSO/M_STACK_NO,Stacking Factor (Vehicle Space Optimization),,,NUMC,3,0,
+/VSO/R_PAL_IND,/VSO/M_PALLET_IND,Load without Packaging Material (VSO),,,CHAR,1,0,Possible values
+/VSO/R_PAL_OVR_D,/VSO/R_PAL_OVR_D,Permissible Overhang (Depth) of Packaging Material (VSO),,,QUAN,13,3,
+/VSO/R_PAL_OVR_W,/VSO/R_PAL_OVR_W,Permissible Overhang (Width) of Shipping Material (VSO),,,QUAN,13,3,
+/VSO/R_PAL_B_HT,/VSO/R_PAL_BIN_HGT,Maximum Stacking Height of the Packaging Material (VSO),,,QUAN,13,3,
+/VSO/R_TOL_B_HT,/VSO/R_TOL_BIN_HT,Tolerance to Exceed the Max. Stacking Height (VSO),,,QUAN,13,3,
+/VSO/R_QUAN_UNIT,/VSO/R_QUAN_UNIT,Unit of Measure Vehicle Space Optimization,,,UNIT,3,0,
+PACKCODE,CBUNE_PACODE,Packaging Code,,CCUNC121,CHAR,10,0,
+MCOND,DFPS_MCOND,Material Condition Management,,,CHAR,1,0,Possible values
+LOGLEV_RETO,DFPS_LOGLEV_RETO,Return to Logistics Level,,,CHAR,1,0,
+ADSPC_SPC,ADSPC_SPC,Spare Part Class Code,,,NUMC,1,0,Possible values
+PICNUM,PIC_PICNUM_SUS,Supersession chain number,,,CHAR,18,0,
+COLOR_ATINN,WRF_COLOR_ATINN,Internal Charactieristic Number for Color Characteristics,,,NUMC,10,0,
+SIZE2_ATINN,WRF_SIZE2_ATINN,Internal Char. Number for Characteristics for Second Sizes,,,NUMC,10,0,
+SIZE1,WRF_SIZE1,Characteristic Value for Main Sizes of Variants,,,CHAR,18,0,
+FREE_CHAR,WRF_FREE_CHAR,Characteristic Value for Evaluation Purposes,,,CHAR,18,0,
+BRAND_ID,WRF_BRAND_ID,Brand,,WRF_BRANDS,CHAR,4,0,
+FIBER_CODE1,WRF_FIBER_CODE_1,Fiber Code for Textiles (Component 1),,WRF_FIBER_CODES,CHAR,3,0,
+FIBER_PART1,WRF_FIBER_PART_1,Percentage Share of Fiber (Component 1),,,NUMC,3,0,
+FIBER_CODE2,WRF_FIBER_CODE_2,Fiber Code for Textiles (Component 2),,WRF_FIBER_CODES,CHAR,3,0,
+FIBER_PART2,WRF_FIBER_PART_2,Percentage Share of Fiber (Component 2),,,NUMC,3,0,
+FIBER_CODE3,WRF_FIBER_CODE_3,Fiber Code for Textiles (Component 3),,WRF_FIBER_CODES,CHAR,3,0,
+FIBER_PART3,WRF_FIBER_PART_3,Percentage Share of Fiber (Component 3),,,NUMC,3,0,
+FIBER_CODE4,WRF_FIBER_CODE_4,Fiber Code for Textiles (Component 4),,WRF_FIBER_CODES,CHAR,3,0,
+FIBER_PART4,WRF_FIBER_PART_4,Percentage Share of Fiber (Component 4),,,NUMC,3,0,
+FIBER_CODE5,WRF_FIBER_CODE_5,Fiber Code for Textiles (Component 5),,WRF_FIBER_CODES,CHAR,3,0,
+FIBER_PART5,WRF_FIBER_PART_5,Percentage Share of Fiber (Component 5),,,NUMC,3,0,
+FASHGRD,FASHGRD,Fashion Grade,,T6WFG,CHAR,4,0,
+COBJID,HROBJID,Object ID,,,NUMC,8,0,
+COTYPE,OTYPE,Object Type,,,CHAR,2,0,
+OIGROUPNAM,OIG_PCG,TD product group,,TOIGAP,CHAR,8,0,
+OITRIND,OIH_TRIND,Transfer sign for plant-to-plant transfers,,,CHAR,1,0,Possible values
+OIHMTXGR,OIH_J1B_MTXGR,Material tax group,,OIH2M_J1B,CHAR,4,0,
