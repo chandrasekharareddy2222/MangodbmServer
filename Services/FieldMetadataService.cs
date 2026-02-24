@@ -19,6 +19,7 @@ namespace FieldMetadataAPI.Services
         Task<List<FieldMetadataWithValuesDto>> GetAllWithValuesAsync();
         Task<int> BulkUpdateMandatoryAsync(BulkUpdateMandatoryDto bulkUpdateDto);
         Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator);
+        Task<List<string>> GetActiveCheckTablesAsync();
     }
 
     /// <summary>
@@ -495,6 +496,15 @@ namespace FieldMetadataAPI.Services
             }
 
             return value;
+        }
+        
+        public async Task<List<string>> GetActiveCheckTablesAsync()
+        {
+            _logger.LogInformation("Getting active check tables");
+
+            var result = await _repository.GetActiveCheckTablesAsync();
+
+            return result.ToList();
         }
     }
 }

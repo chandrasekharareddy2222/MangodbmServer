@@ -20,6 +20,7 @@ namespace FieldMetadataAPI.Repositories
         Task<Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>> GetAllWithValuesAsync();
         Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates);
         Task<List<string>> GetAllFieldNamesAsync();
+        Task<IEnumerable<string>> GetActiveCheckTablesAsync();
     }
 
     /// <summary>
@@ -373,6 +374,17 @@ namespace FieldMetadataAPI.Repositories
 
             var fieldNames = await connection.QueryAsync<string>(sql);
             return fieldNames.ToList();
+        }
+        
+        public async Task<IEnumerable<string>> GetActiveCheckTablesAsync()
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            _logger.LogInformation("Fetching active check tables");
+
+            return await connection.QueryAsync<string>(
+                "sp_GetActiveCheckTablesOnly",
+                commandType: CommandType.StoredProcedure);
         }
     }
 }
