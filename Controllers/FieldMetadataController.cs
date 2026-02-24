@@ -292,5 +292,21 @@ namespace FieldMetadataAPI.Controllers
                 return BadRequest(ApiResponse<object>.ErrorResponse($"Error processing CSV file: {ex.Message}"));
             }
         }
+
+        /// <summary>
+        /// Get all active check tables
+        /// </summary>
+        [HttpGet("active-checktables")]
+        [ProducesResponseType(typeof(ApiResponse<List<string>>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetActiveCheckTables()
+        {
+            _logger.LogInformation("GET request received for active check tables");
+
+            var result = await _service.GetActiveCheckTablesAsync();
+
+            return Ok(ApiResponse<List<string>>.SuccessResponse(
+                result,
+                "Active check tables retrieved successfully"));
+        }
     }
 }
