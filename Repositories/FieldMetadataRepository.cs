@@ -1,7 +1,10 @@
 using Dapper;
 using FieldMetadataAPI.Data;
+using FieldMetadataAPI.DTOs;
 using FieldMetadataAPI.Models;
 using System.Data;
+using System.Data.Common;
+using System.Text.Json;
 
 namespace FieldMetadataAPI.Repositories
 {
@@ -20,6 +23,9 @@ namespace FieldMetadataAPI.Repositories
         Task<Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>> GetAllWithValuesAsync();
         Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates);
         Task<List<string>> GetAllFieldNamesAsync();
+        //  Task<IEnumerable<CheckTableValueDto>> CheckTableValueAsync(string tableName);
+        Task<IEnumerable<CheckTableValueDto>> CheckTableValueAsync(string tableName);
+
     }
 
     /// <summary>
@@ -35,6 +41,7 @@ namespace FieldMetadataAPI.Repositories
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
+
 
         public async Task<IEnumerable<FieldMetadata>> GetAllAsync(string? fieldName = null, string? tableGroup = null, string? dataType = null, int pageNumber = 1, int pageSize = 10)
         {
@@ -374,5 +381,22 @@ namespace FieldMetadataAPI.Repositories
             var fieldNames = await connection.QueryAsync<string>(sql);
             return fieldNames.ToList();
         }
+
+        public async Task<IEnumerable<CheckTableValueDto>> CheckTableValueAsync(string tableName)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+            var parameters = new DynamicParameters();
+            parameters.Add("@CheckTableName", tableName);
+            //parameters.Add("@KeyValue", keyValue);
+
+            var result = await connection.QueryAsync<CheckTableValueDto>(
+                "sp_CheckTableValueExists",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return result;
+        }
+
     }
 }
