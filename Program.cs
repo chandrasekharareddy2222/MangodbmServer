@@ -80,6 +80,9 @@ builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();
 builder.Services.AddScoped<IFieldMetadataService, FieldMetadataService>();
 builder.Services.AddScoped<IMaterialService, MaterialService>();
 
+builder.Services.AddScoped<ICheckTableValueService, CheckTableValueService>();
+builder.Services.AddScoped<ICheckTableValueRepository, CheckTableValueRepository>();
+
 // Add Health Checks
 builder.Services.AddHealthChecks();
 
