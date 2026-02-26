@@ -239,55 +239,55 @@ namespace FieldMetadataAPI.Repositories
 
             // UPDATED SQL: Replaced TableGroup with UI_Assignment_Block and added Subject
             var sql = @"
-        SELECT 
-            fm.FieldName,
-            fm.DataElement,
-            fm.Description,
-            fm.KeyField,
-            fm.CheckTable,
-            fm.DataType,
-            fm.FieldLength,
-            fm.Decimals,
-            fm.ValidationType,
-            fm.HasDropdown,
-            fm.IsMandatory,
-            fm.UIAssignmentBlock, 
-            fm.Subject,             
-            fm.UIControlType,
-            fm.IsActive,
-            fm.CreatedDate,
-            -- Check Table Values
-            ctv.CheckTableID,
-            ctv.CheckTableName,
-            ctv.KeyValue,
-            ctv.Description,
-            ctv.AdditionalInfo,
-            ctv.IsActive,
-            ctv.ValidFrom,
-            ctv.ValidTo,
-            ctv.CreatedDate,
-            ctv.CreatedBy,
-            -- Passable Values
-            pv.PassableID,
-            pv.FieldName,
-            pv.KeyValue,
-            pv.DisplayValue,
-            pv.Description,
-            pv.DisplayOrder,
-            pv.IsDefault,
-            pv.IconClass,
-            pv.ColorCode,
-            pv.IsActive,
-            pv.CreatedDate
-        FROM dbo.Field_Metadata fm
-        LEFT JOIN dbo.Check_Table_Values ctv 
-            ON fm.CheckTable = ctv.CheckTableName
-            AND ctv.IsActive = 1
-        LEFT JOIN dbo.Passable_Values pv 
-            ON fm.FieldName = pv.FieldName
-            AND pv.IsActive = 1
-        WHERE fm.IsActive = 1
-        ORDER BY fm.FieldName, pv.DisplayOrder, ctv.KeyValue";
+            SELECT 
+                fm.FieldName,
+                fm.DataElement,
+                fm.Description,
+                fm.KeyField,
+                fm.CheckTable,
+                fm.DataType,
+                fm.FieldLength,
+                fm.Decimals,
+                fm.ValidationType,
+                fm.HasDropdown,
+                fm.IsMandatory,
+                fm.UIAssignmentBlock, 
+                fm.Subject,             
+                fm.UIControlType,
+                fm.IsActive,
+                fm.CreatedDate,
+                -- Check Table Values
+                 ctv.CheckTableID,
+                ctv.CheckTableName,
+                ctv.KeyValue,
+                ctv.Description,
+                ctv.AdditionalInfo,
+                ctv.IsActive,
+                ctv.ValidFrom,
+                ctv.ValidTo,
+                ctv.CreatedDate,
+                ctv.CreatedBy,
+                -- Passable Values
+                pv.PassableID,
+                pv.FieldName,
+                pv.KeyValue,
+                pv.DisplayValue,
+                pv.Description,
+                pv.DisplayOrder,
+                pv.IsDefault,
+                pv.IconClass,
+                pv.ColorCode,
+                pv.IsActive,
+                pv.CreatedDate
+            FROM dbo.Field_Metadata fm
+            LEFT JOIN dbo.Check_Table_Values ctv 
+                ON fm.CheckTable = ctv.CheckTableName
+                AND ctv.IsActive = 1
+            LEFT JOIN dbo.Passable_Values pv 
+                ON fm.FieldName = pv.FieldName
+                AND pv.IsActive = 1
+            WHERE fm.IsActive = 1
+            ORDER BY fm.FieldName, pv.DisplayOrder, ctv.KeyValue";
 
             _logger.LogInformation("Fetching all field metadata with check table and passable values");
 
