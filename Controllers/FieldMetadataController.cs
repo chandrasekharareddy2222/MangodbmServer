@@ -290,8 +290,8 @@ namespace FieldMetadataAPI.Controllers
                                     Datatype = row["Data Type"]?.ToString(),
                                     Length = row["Length"]?.ToString(),
                                     Decimals = row["Decimals"]?.ToString(),
-                                    Description = row["Short Desciption"]?.ToString(),
-                                    Checktable = row["Check Tabel"]?.ToString(),
+                                    Description = row["Short Description"]?.ToString(),
+                                    Checktable = row["Check Table"]?.ToString(),
                                     PossibleValues = row["Possible values"]?.ToString(),
                                     Subject = row.Table.Columns.Contains("Subject")? row["Subject"]?.ToString(): null
                                 });

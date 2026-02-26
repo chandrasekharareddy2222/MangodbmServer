@@ -12,9 +12,9 @@ namespace FieldMetadataAPI.Mappings
         {
             Map(m => m.Field).Name("Field");
             Map(m => m.DataElement).Name("Data element").Optional();
-            Map(m => m.Description).Name("Description").Optional();
+            Map(m => m.Description).Name("Short Description").Optional();
             Map(m => m.KeyField).Name("Key Field").Optional();
-            Map(m => m.Checktable).Name("Checktable").Optional();
+            Map(m => m.Checktable).Name("Check Table").Optional();
             Map(m => m.Datatype).Name("Datatype").Optional();
             Map(m => m.Length).Name("Length").Optional();
             Map(m => m.Decimals).Name("Decimals").Optional();
