@@ -72,8 +72,8 @@ BEGIN
                 [Length] INT,
                 [Decimals] INT, 
                 [Coordinate] VARCHAR(100), 
-                [Short Desciption] NVARCHAR(255),
-                [Check Tabel] VARCHAR(100), 
+                [Short Description] NVARCHAR(255),
+                [Check Table] VARCHAR(100), 
                 [Possible values] NVARCHAR(MAX),
                 [UI Assignment Block] NVARCHAR(100), 
                 [Subject] NVARCHAR(100)
@@ -108,8 +108,8 @@ BEGIN
                 UPPER(LTRIM(RTRIM([Data Type]))),
                 ISNULL([Length],0),
                 ISNULL([Decimals],0),
-                NULLIF(LTRIM(RTRIM([Short Desciption])), ''),
-                NULLIF(LTRIM(RTRIM([Check Tabel])), ''),
+                NULLIF(LTRIM(RTRIM([Short Description])), ''),
+                NULLIF(LTRIM(RTRIM([Check Table])), ''),
                 CASE WHEN [Possible values] IS NOT NULL 
                      AND LTRIM(RTRIM([Possible values])) <> '' THEN 'X' END,
                 NULLIF(LTRIM(RTRIM([UI Assignment Block])), ''),

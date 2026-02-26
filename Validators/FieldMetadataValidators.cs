@@ -36,7 +36,7 @@ namespace FieldMetadataAPI.Validators
 
             RuleFor(x => x.FieldLength)
                 .GreaterThan(0).WithMessage("FieldLength must be greater than 0.")
-                .When(x => x.FieldLength.HasValue);
+                .When(x => x.FieldLength.HasValue && x.FieldLength.Value > 0);
 
             RuleFor(x => x.Decimals)
                 .GreaterThanOrEqualTo(0).WithMessage("Decimals must be 0 or greater.")

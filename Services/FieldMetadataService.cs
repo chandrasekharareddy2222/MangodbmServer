@@ -386,8 +386,8 @@ namespace FieldMetadataAPI.Services
             string? keyField = row.KeyField?.Trim().ToUpper() == "X" ? "X" : null;
             string? checkTable = string.IsNullOrWhiteSpace(row.Checktable?.Trim()) ? null : row.Checktable.Trim();
             string? dataType = row.Datatype?.Trim().ToUpper() ?? "";
-            int fieldLength = int.TryParse(row.Length, out var len) ? len : 0;
-            int decimals = int.TryParse(row.Decimals, out var dec) ? dec : 0;
+            int? fieldLength = int.TryParse(row.Length, out var len) && len > 0 ? len : null;
+            int? decimals = int.TryParse(row.Decimals, out var dec) && dec >= 0 ? dec : null;
             string? subject = string.IsNullOrWhiteSpace(row.Subject?.Trim())? null : row.Subject.Trim();
 
             // Handle HasDropdown: if PossibleValues contains "Possible values", set to 'X'
