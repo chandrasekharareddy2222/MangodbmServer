@@ -26,11 +26,13 @@
     }
     public class UpdateCheckTableValueDto
     {
+        public string KeyValue { get; set; }
         public string? Description { get; set; }
         public string? AdditionalInfo { get; set; }
         public bool IsActive { get; set; }
         public DateTime ValidFrom { get; set; }
         public DateTime ValidTo { get; set; }
     }
+   
 
 }

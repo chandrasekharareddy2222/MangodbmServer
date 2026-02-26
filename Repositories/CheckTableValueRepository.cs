@@ -1,6 +1,8 @@
 ﻿using Dapper;
 using FieldMetadataAPI.Data;
 using FieldMetadataAPI.Models;
+using Microsoft.Data.SqlClient;
+using OfficeOpenXml;
 using System.Data;
 
 namespace FieldMetadataAPI.Repositories
@@ -12,6 +14,7 @@ namespace FieldMetadataAPI.Repositories
         Task<int> CreateAsync(CheckTableValue value);
         Task<bool> UpdateAsync(int id, CheckTableValue value);
         Task<bool> SoftDeleteAsync(int id);
+       
 
 
     }
@@ -20,6 +23,7 @@ namespace FieldMetadataAPI.Repositories
     {
         private readonly IDbConnectionFactory _connectionFactory;
         private readonly ILogger<CheckTableValueRepository> _logger;
+        private readonly string _connectionString;
 
         public CheckTableValueRepository(
             IDbConnectionFactory connectionFactory,
@@ -85,6 +89,7 @@ namespace FieldMetadataAPI.Repositories
             var parameters = new
             {
                 CheckTableID = id,
+                value.KeyValue,
                 value.Description,
                 value.AdditionalInfo,
                 value.IsActive,
@@ -110,5 +115,8 @@ namespace FieldMetadataAPI.Repositories
 
             return rows > 0;
         }
+
+      
+
     }   
 }   

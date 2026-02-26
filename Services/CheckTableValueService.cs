@@ -1,6 +1,8 @@
-﻿using FieldMetadataAPI.DTOs;
+﻿using FieldMetadataAPI.Data;
+using FieldMetadataAPI.DTOs;
 using FieldMetadataAPI.Models;
 using FieldMetadataAPI.Repositories;
+using Microsoft.AspNetCore.Connections;
 
 namespace FieldMetadataAPI.Services
 {
@@ -11,16 +13,18 @@ namespace FieldMetadataAPI.Services
         Task<bool> UpdateAsync(int id, UpdateCheckTableValueDto dto);
         Task<bool> DeleteAsync(int id);
 
+
     }
     public class CheckTableValueService : ICheckTableValueService
     {
         private readonly ICheckTableValueRepository _repository;
         private readonly ILogger<CheckTableValueService> _logger;
-
+       
         public CheckTableValueService(
             ICheckTableValueRepository repository,
             ILogger<CheckTableValueService> logger)
         {
+
             _repository = repository;
             _logger = logger;
         }
@@ -66,7 +70,7 @@ namespace FieldMetadataAPI.Services
 
             if (existing == null)
                 return false;
-
+            existing.KeyValue = dto.KeyValue;
             existing.Description = dto.Description;
             existing.AdditionalInfo = dto.AdditionalInfo;
             existing.IsActive = dto.IsActive;
@@ -84,6 +88,8 @@ namespace FieldMetadataAPI.Services
 
             return await _repository.SoftDeleteAsync(id);
         }
+    
+    }
 
-    } 
-}
+} 
+
