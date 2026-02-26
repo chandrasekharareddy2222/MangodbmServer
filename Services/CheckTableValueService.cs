@@ -12,8 +12,7 @@ namespace FieldMetadataAPI.Services
         Task<int> CreateAsync(CreateCheckTableValueDto dto);
         Task<bool> UpdateAsync(int id, UpdateCheckTableValueDto dto);
         Task<bool> DeleteAsync(int id);
-
-
+        Task<bool> UploadCsvAsync(string tableName, IFormFile file);
     }
     public class CheckTableValueService : ICheckTableValueService
     {
@@ -88,7 +87,50 @@ namespace FieldMetadataAPI.Services
 
             return await _repository.SoftDeleteAsync(id);
         }
-    
+        public async Task<bool> UploadCsvAsync(string tableName, IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                throw new Exception("File is empty");
+
+            using var reader = new StreamReader(file.OpenReadStream());
+
+            var list = new List<CheckTableValue>();
+
+            bool isHeader = true;
+
+            while (!reader.EndOfStream)
+            {
+                var line = await reader.ReadLineAsync();
+
+                if (isHeader)
+                {
+                    isHeader = false;
+                    continue;
+                }
+
+                if (string.IsNullOrWhiteSpace(line))
+                    continue;
+
+                var columns = line.Split(',');
+
+                list.Add(new CheckTableValue
+                {
+                    CheckTableName = tableName,
+                    KeyValue = columns[0].Trim(),
+                    Description = columns.Length > 1 ? columns[1].Trim() : null,
+                    AdditionalInfo = columns.Length > 2 ? columns[2].Trim() : null,
+                    IsActive = true,
+                    ValidFrom = DateTime.Now,
+                    ValidTo = DateTime.Parse("9999-12-31"),
+                    CreatedBy = "CSV_UPLOAD"
+                });
+            }
+
+
+
+            return true;
+        }
+
     }
 
 } 

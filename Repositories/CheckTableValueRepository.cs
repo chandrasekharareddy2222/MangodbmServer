@@ -14,7 +14,8 @@ namespace FieldMetadataAPI.Repositories
         Task<int> CreateAsync(CheckTableValue value);
         Task<bool> UpdateAsync(int id, CheckTableValue value);
         Task<bool> SoftDeleteAsync(int id);
-       
+        Task UploadExcelAsync(string tableName, IFormFile file);
+
 
 
     }
@@ -65,14 +66,15 @@ namespace FieldMetadataAPI.Repositories
 
             var parameters = new
             {
-                value.CheckTableName,
-                value.KeyValue,
-                value.Description,
-                value.AdditionalInfo,
-                value.IsActive,
-                value.ValidFrom,
-                value.ValidTo,
-                value.CreatedBy
+
+                CheckTableName = value.CheckTableName,
+                KeyValue = value.KeyValue,
+                Description = value.Description,
+                AdditionalInfo = value.AdditionalInfo,
+                IsActive = value.IsActive,
+                ValidFrom = value.ValidFrom,
+                ValidTo = value.ValidTo,
+                CreatedBy = value.CreatedBy ?? "SYSTEM"
             };
 
             var id = await connection.ExecuteScalarAsync<int>(
@@ -115,8 +117,37 @@ namespace FieldMetadataAPI.Repositories
 
             return rows > 0;
         }
+        public async Task UploadExcelAsync(string tableName, IFormFile file)
+        {
+            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
 
-      
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+
+            using var package = new ExcelPackage(stream);
+            var worksheet = package.Workbook.Worksheets[0];
+            int rows = worksheet.Dimension.Rows;
+
+            using SqlConnection con = new SqlConnection(_connectionString);
+            await con.OpenAsync();
+
+            for (int row = 2; row <= rows; row++)
+            {
+                using SqlCommand cmd = new SqlCommand("sp_InsertCheckTableValue", con);
+                cmd.CommandType = CommandType.StoredProcedure;
+
+                cmd.Parameters.AddWithValue("@CheckTableName", tableName);
+                cmd.Parameters.AddWithValue("@KeyValue", worksheet.Cells[row, 1].Text);
+                cmd.Parameters.AddWithValue("@Description", worksheet.Cells[row, 2].Text);
+                cmd.Parameters.AddWithValue("@AdditionalInfo",
+                    string.IsNullOrEmpty(worksheet.Cells[row, 3].Text)
+                    ? DBNull.Value
+                    : worksheet.Cells[row, 3].Text);
+
+                await cmd.ExecuteNonQueryAsync();
+            }
+        }
+
 
     }   
 }   
