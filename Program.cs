@@ -72,6 +72,9 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddSingleton<IDbConnectionFactory>(new SqlConnectionFactory(connectionString));
 
+// Add Memory Caching
+builder.Services.AddMemoryCache();
+
 // Register Repositories
 builder.Services.AddScoped<IFieldMetadataRepository, FieldMetadataRepository>();
 builder.Services.AddScoped<IMaterialRepository, MaterialRepository>();

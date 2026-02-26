@@ -10,6 +10,7 @@ using CsvHelper.Configuration;
 using System.Globalization;
 using ExcelDataReader;
 using System.Data;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace FieldMetadataAPI.Services
 {
@@ -36,11 +37,15 @@ namespace FieldMetadataAPI.Services
     {
         private readonly IFieldMetadataRepository _repository;
         private readonly ILogger<FieldMetadataService> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private const string CacheKeyAllWithValues = "field_metadata_with_values";
+        private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(30);
 
-        public FieldMetadataService(IFieldMetadataRepository repository, ILogger<FieldMetadataService> logger)
+        public FieldMetadataService(IFieldMetadataRepository repository, ILogger<FieldMetadataService> logger, IMemoryCache memoryCache)
         {
             _repository = repository ?? throw new ArgumentNullException(nameof(repository));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _memoryCache = memoryCache ?? throw new ArgumentNullException(nameof(memoryCache));
         }
 
         public async Task<PagedResponse<FieldMetadataDto>> GetAllAsync(FieldMetadataQueryDto query)
@@ -111,6 +116,9 @@ namespace FieldMetadataAPI.Services
 
             await _repository.CreateAsync(entity);
 
+            // Invalidate cache
+            InvalidateCache();
+
             // Retrieve the created entity to get computed columns
             var created = await _repository.GetByIdAsync(createDto.FieldName);
             return MapToDto(created!);
@@ -136,6 +144,13 @@ namespace FieldMetadataAPI.Services
             existing.Subject= updateDto.Subject;
 
             var rowsAffected = await _repository.UpdateAsync(fieldName, existing);
+            
+            // Invalidate cache on successful update
+            if (rowsAffected > 0)
+            {
+                InvalidateCache();
+            }
+            
             return rowsAffected > 0;
         }
 
@@ -151,7 +166,20 @@ namespace FieldMetadataAPI.Services
             }
 
             var rowsAffected = await _repository.SoftDeleteAsync(fieldName);
+            
+            // Invalidate cache on successful delete
+            if (rowsAffected > 0)
+            {
+                InvalidateCache();
+            }
+            
             return rowsAffected > 0;
+        }
+
+        private void InvalidateCache()
+        {
+            _logger.LogInformation("Invalidating field metadata cache");
+            _memoryCache.Remove(CacheKeyAllWithValues);
         }
 
         private FieldMetadataDto MapToDto(FieldMetadata entity)
@@ -181,6 +209,13 @@ namespace FieldMetadataAPI.Services
         {
             _logger.LogInformation("Getting all field metadata with check table and passable values");
 
+            // Try to get from cache first
+            if (_memoryCache.TryGetValue(CacheKeyAllWithValues, out List<FieldMetadataWithValuesDto> cachedResult))
+            {
+                _logger.LogInformation("Returning cached field metadata with values");
+                return cachedResult;
+            }
+
             var data = await _repository.GetAllWithValuesAsync();
 
             var result = data.Select(kvp =>
@@ -205,7 +240,7 @@ namespace FieldMetadataAPI.Services
                     IsActive = metadata.IsActive,
                     CreatedDate = metadata.CreatedDate,
                     ModifiedDate = null, // Add this to FieldMetadata model if needed
-                    CheckTableValues = checkTableValues.Any() 
+                    CheckTableValues = checkTableValues.Count > 0
                         ? checkTableValues.Select(ctv => new CheckTableValueDto
                         {
                             TableName = ctv.CheckTableName,
@@ -219,7 +254,7 @@ namespace FieldMetadataAPI.Services
                             CreatedBy = ctv.CreatedBy
                         }).ToList()
                         : null,
-                    PassableValues = passableValues.Any()
+                    PassableValues = passableValues.Count > 0
                         ? passableValues.Select(pv => new PassableValueDto
                         {
                             FieldName = pv.FieldName,
@@ -236,6 +271,13 @@ namespace FieldMetadataAPI.Services
                         : null
                 };
             }).ToList();
+
+            // Cache the result for 30 minutes
+            var cacheOptions = new MemoryCacheEntryOptions
+            {
+                AbsoluteExpirationRelativeToNow = CacheExpiration
+            };
+            _memoryCache.Set(CacheKeyAllWithValues, result, cacheOptions);
 
             return result;
         }

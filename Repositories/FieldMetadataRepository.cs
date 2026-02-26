@@ -237,93 +237,43 @@ namespace FieldMetadataAPI.Repositories
         {
             using var connection = _connectionFactory.CreateConnection();
 
-            // UPDATED SQL: Replaced TableGroup with UI_Assignment_Block and added Subject
-            var sql = @"
-            SELECT 
-                fm.FieldName,
-                fm.DataElement,
-                fm.Description,
-                fm.KeyField,
-                fm.CheckTable,
-                fm.DataType,
-                fm.FieldLength,
-                fm.Decimals,
-                fm.ValidationType,
-                fm.HasDropdown,
-                fm.IsMandatory,
-                fm.UIAssignmentBlock, 
-                fm.Subject,             
-                fm.UIControlType,
-                fm.IsActive,
-                fm.CreatedDate,
-                -- Check Table Values
-                 ctv.CheckTableID,
-                ctv.CheckTableName,
-                ctv.KeyValue,
-                ctv.Description,
-                ctv.AdditionalInfo,
-                ctv.IsActive,
-                ctv.ValidFrom,
-                ctv.ValidTo,
-                ctv.CreatedDate,
-                ctv.CreatedBy,
-                -- Passable Values
-                pv.PassableID,
-                pv.FieldName,
-                pv.KeyValue,
-                pv.DisplayValue,
-                pv.Description,
-                pv.DisplayOrder,
-                pv.IsDefault,
-                pv.IconClass,
-                pv.ColorCode,
-                pv.IsActive,
-                pv.CreatedDate
-            FROM dbo.Field_Metadata fm
-            LEFT JOIN dbo.Check_Table_Values ctv 
-                ON fm.CheckTable = ctv.CheckTableName
-                AND ctv.IsActive = 1
-            LEFT JOIN dbo.Passable_Values pv 
-                ON fm.FieldName = pv.FieldName
-                AND pv.IsActive = 1
-            WHERE fm.IsActive = 1
-            ORDER BY fm.FieldName, pv.DisplayOrder, ctv.KeyValue";
+            _logger.LogInformation("Executing stored procedure sp_GetAllFieldMetadataWithValues");
 
-            _logger.LogInformation("Fetching all field metadata with check table and passable values");
+            // Execute stored procedure and read multiple result sets
+            using (var multi = await connection.QueryMultipleAsync("sp_GetAllFieldMetadataWithValues", commandType: CommandType.StoredProcedure))
+            {
+                // Result Set 1: Field Metadata
+                var metadata = (await multi.ReadAsync<FieldMetadata>())
+                    .ToDictionary(m => m.FieldName);
 
-            var result = new Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>();
+                // Result Set 2: Check Table Values
+                var checkTableValues = (await multi.ReadAsync<CheckTableValue>())
+                    .GroupBy(c => c.CheckTableName)
+                    .ToDictionary(g => g.Key, g => g.ToList());
 
-            await connection.QueryAsync<FieldMetadata, CheckTableValue, PassableValue, int>(
-                sql,
-                (metadata, checkTableValue, passableValue) =>
+                // Result Set 3: Passable Values
+                var passableValues = (await multi.ReadAsync<PassableValue>())
+                    .GroupBy(p => p.FieldName)
+                    .ToDictionary(g => g.Key, g => g.ToList());
+
+                // Combine results efficiently
+                var result = new Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>();
+
+                foreach (var fieldMetadata in metadata.Values)
                 {
-                    if (!result.ContainsKey(metadata.FieldName))
-                    {
-                        result[metadata.FieldName] = (metadata, new List<CheckTableValue>(), new List<PassableValue>());
-                    }
+                    var checkValues = string.IsNullOrEmpty(fieldMetadata.CheckTable) || !checkTableValues.ContainsKey(fieldMetadata.CheckTable)
+                        ? new List<CheckTableValue>()
+                        : checkTableValues[fieldMetadata.CheckTable];
 
-                    var entry = result[metadata.FieldName];
+                    var passValues = !passableValues.ContainsKey(fieldMetadata.FieldName)
+                        ? new List<PassableValue>()
+                        : passableValues[fieldMetadata.FieldName];
 
-                    // Add check table value if not null and not already added
-                    if (checkTableValue?.CheckTableID > 0 &&
-                        !entry.CheckTableValues.Any(c => c.CheckTableID == checkTableValue.CheckTableID))
-                    {
-                        entry.CheckTableValues.Add(checkTableValue);
-                    }
+                    result[fieldMetadata.FieldName] = (fieldMetadata, checkValues, passValues);
+                }
 
-                    // Add passable value if not null and not already added
-                    if (passableValue?.PassableID > 0 &&
-                        !entry.PassableValues.Any(p => p.PassableID == passableValue.PassableID))
-                    {
-                        entry.PassableValues.Add(passableValue);
-                    }
-
-                    return 0; // Dummy return
-                },
-                splitOn: "CheckTableID,PassableID"
-            );
-
-            return result;
+                return result;
+            }
         }
 
         public async Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates)
