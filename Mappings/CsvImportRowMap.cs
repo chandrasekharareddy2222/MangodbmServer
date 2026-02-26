@@ -20,6 +20,7 @@ namespace FieldMetadataAPI.Mappings
             Map(m => m.Decimals).Name("Decimals").Optional();
             Map(m => m.PossibleValues).Name("Possible values").Optional();
             Map(m => m.Result).Ignore();
+            Map(m => m.Subject).Name("Subject");
         }
     }
 }

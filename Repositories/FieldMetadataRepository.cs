@@ -2,6 +2,7 @@ using Dapper;
 using FieldMetadataAPI.Data;
 using FieldMetadataAPI.Models;
 using System.Data;
+using Serilog.Parsing;
 
 namespace FieldMetadataAPI.Repositories
 {
@@ -37,7 +38,7 @@ namespace FieldMetadataAPI.Repositories
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<IEnumerable<FieldMetadata>> GetAllAsync(string? fieldName = null, string? tableGroup = null, string? dataType = null, int pageNumber = 1, int pageSize = 10)
+        public async Task<IEnumerable<FieldMetadata>> GetAllAsync(string? fieldName = null, string? UIAssignmentBlock = null, string? dataType = null, int pageNumber = 1, int pageSize = 10)
         {
             using var connection = _connectionFactory.CreateConnection();
             
@@ -54,14 +55,15 @@ namespace FieldMetadataAPI.Repositories
                     ValidationType,
                     HasDropdown,
                     IsMandatory,
-                    TableGroup,
+                    UIAssignmentBlock,
+                    Subject, 
                     UIControlType,
                     IsActive,
                     CreatedDate
                 FROM Field_Metadata
                 WHERE IsActive = 1
                 AND (@FieldName IS NULL OR FieldName LIKE '%' + @FieldName + '%')
-                AND (@TableGroup IS NULL OR TableGroup = @TableGroup)
+                AND (@UIAssignmentBlock IS NULL OR UIAssignmentBlock = @UIAssignmentBlock)
                 AND (@DataType IS NULL OR DataType = @DataType)
                 ORDER BY FieldName
                 OFFSET @Offset ROWS
@@ -69,20 +71,20 @@ namespace FieldMetadataAPI.Repositories
 
             var offset = (pageNumber - 1) * pageSize;
 
-            _logger.LogInformation("Fetching field metadata with filters: FieldName={FieldName}, TableGroup={TableGroup}, DataType={DataType}, Page={PageNumber}, PageSize={PageSize}", 
-                fieldName, tableGroup, dataType, pageNumber, pageSize);
+            _logger.LogInformation("Fetching field metadata with filters: FieldName={FieldName}, UIAssignmentBlock={UIAssignmentBlock}, DataType={DataType}, Page={PageNumber}, PageSize={PageSize}", 
+                fieldName, UIAssignmentBlock, dataType, pageNumber, pageSize);
 
             return await connection.QueryAsync<FieldMetadata>(sql, new 
             { 
-                FieldName = fieldName, 
-                TableGroup = tableGroup, 
+                FieldName = fieldName,
+                UIAssignmentBlock = UIAssignmentBlock, 
                 DataType = dataType,
                 Offset = offset,
                 PageSize = pageSize
             });
         }
 
-        public async Task<int> GetTotalCountAsync(string? fieldName = null, string? tableGroup = null, string? dataType = null)
+        public async Task<int> GetTotalCountAsync(string? fieldName = null, string? UIAssignmentBlock = null, string? dataType = null)
         {
             using var connection = _connectionFactory.CreateConnection();
             
@@ -91,13 +93,13 @@ namespace FieldMetadataAPI.Repositories
                 FROM Field_Metadata
                 WHERE IsActive = 1
                 AND (@FieldName IS NULL OR FieldName LIKE '%' + @FieldName + '%')
-                AND (@TableGroup IS NULL OR TableGroup = @TableGroup)
+                AND (@UIAssignmentBlock IS NULL OR UIAssignmentBlock = @UIAssignmentBlock)
                 AND (@DataType IS NULL OR DataType = @DataType)";
 
             return await connection.ExecuteScalarAsync<int>(sql, new 
             { 
-                FieldName = fieldName, 
-                TableGroup = tableGroup, 
+                FieldName = fieldName,
+                UIAssignmentBlock = UIAssignmentBlock, 
                 DataType = dataType
             });
         }
@@ -119,7 +121,8 @@ namespace FieldMetadataAPI.Repositories
                     ValidationType,
                     HasDropdown,
                     IsMandatory,
-                    TableGroup,
+                    UIAssignmentBlock,
+                    Subject,
                     UIControlType,
                     IsActive,
                     CreatedDate
@@ -148,7 +151,8 @@ namespace FieldMetadataAPI.Repositories
                     FieldLength,
                     Decimals,
                     HasDropdown,
-                    TableGroup,
+                    UIAssignmentBlock,
+                    Subject,  
                     IsActive,
                     CreatedDate
                 )
@@ -163,7 +167,8 @@ namespace FieldMetadataAPI.Repositories
                     @FieldLength,
                     @Decimals,
                     @HasDropdown,
-                    @TableGroup,
+                    @UIAssignmentBlock,
+                    @Subject,
                     @IsActive,
                     @CreatedDate
                 )";
@@ -184,7 +189,7 @@ namespace FieldMetadataAPI.Repositories
                     Description = @Description,
                     CheckTable = @CheckTable,
                     HasDropdown = @HasDropdown,
-                    TableGroup = @TableGroup,
+                    UIAssignmentBlock = @UIAssignmentBlock,
                     IsActive = @IsActive
                 WHERE FieldName = @FieldName";
 
@@ -196,7 +201,7 @@ namespace FieldMetadataAPI.Repositories
                 Description = fieldMetadata.Description,
                 CheckTable = fieldMetadata.CheckTable,
                 HasDropdown = fieldMetadata.HasDropdown,
-                TableGroup = fieldMetadata.TableGroup,
+                UIAssignmentBlock = fieldMetadata.UIAssignmentBlock,
                 IsActive = fieldMetadata.IsActive
             });
         }
@@ -231,56 +236,58 @@ namespace FieldMetadataAPI.Repositories
         public async Task<Dictionary<string, (FieldMetadata Metadata, List<CheckTableValue> CheckTableValues, List<PassableValue> PassableValues)>> GetAllWithValuesAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
-            
+
+            // UPDATED SQL: Replaced TableGroup with UI_Assignment_Block and added Subject
             var sql = @"
-                SELECT 
-                    fm.FieldName,
-                    fm.DataElement,
-                    fm.Description,
-                    fm.KeyField,
-                    fm.CheckTable,
-                    fm.DataType,
-                    fm.FieldLength,
-                    fm.Decimals,
-                    fm.ValidationType,
-                    fm.HasDropdown,
-                    fm.IsMandatory,
-                    fm.TableGroup,
-                    fm.UIControlType,
-                    fm.IsActive,
-                    fm.CreatedDate,
-                    -- Check Table Values
-                    ctv.CheckTableID,
-                    ctv.CheckTableName,
-                    ctv.KeyValue,
-                    ctv.Description,
-                    ctv.AdditionalInfo,
-                    ctv.IsActive,
-                    ctv.ValidFrom,
-                    ctv.ValidTo,
-                    ctv.CreatedDate,
-                    ctv.CreatedBy,
-                    -- Passable Values
-                    pv.PassableID,
-                    pv.FieldName,
-                    pv.KeyValue,
-                    pv.DisplayValue,
-                    pv.Description,
-                    pv.DisplayOrder,
-                    pv.IsDefault,
-                    pv.IconClass,
-                    pv.ColorCode,
-                    pv.IsActive,
-                    pv.CreatedDate
-                FROM dbo.Field_Metadata fm
-                LEFT JOIN dbo.Check_Table_Values ctv 
-                    ON fm.CheckTable = ctv.CheckTableName
-                    AND ctv.IsActive = 1
-                LEFT JOIN dbo.Passable_Values pv 
-                    ON fm.FieldName = pv.FieldName
-                    AND pv.IsActive = 1
-                WHERE fm.IsActive = 1
-                ORDER BY fm.FieldName, pv.DisplayOrder, ctv.KeyValue";
+        SELECT 
+            fm.FieldName,
+            fm.DataElement,
+            fm.Description,
+            fm.KeyField,
+            fm.CheckTable,
+            fm.DataType,
+            fm.FieldLength,
+            fm.Decimals,
+            fm.ValidationType,
+            fm.HasDropdown,
+            fm.IsMandatory,
+            fm.UIAssignmentBlock, 
+            fm.Subject,             
+            fm.UIControlType,
+            fm.IsActive,
+            fm.CreatedDate,
+            -- Check Table Values
+            ctv.CheckTableID,
+            ctv.CheckTableName,
+            ctv.KeyValue,
+            ctv.Description,
+            ctv.AdditionalInfo,
+            ctv.IsActive,
+            ctv.ValidFrom,
+            ctv.ValidTo,
+            ctv.CreatedDate,
+            ctv.CreatedBy,
+            -- Passable Values
+            pv.PassableID,
+            pv.FieldName,
+            pv.KeyValue,
+            pv.DisplayValue,
+            pv.Description,
+            pv.DisplayOrder,
+            pv.IsDefault,
+            pv.IconClass,
+            pv.ColorCode,
+            pv.IsActive,
+            pv.CreatedDate
+        FROM dbo.Field_Metadata fm
+        LEFT JOIN dbo.Check_Table_Values ctv 
+            ON fm.CheckTable = ctv.CheckTableName
+            AND ctv.IsActive = 1
+        LEFT JOIN dbo.Passable_Values pv 
+            ON fm.FieldName = pv.FieldName
+            AND pv.IsActive = 1
+        WHERE fm.IsActive = 1
+        ORDER BY fm.FieldName, pv.DisplayOrder, ctv.KeyValue";
 
             _logger.LogInformation("Fetching all field metadata with check table and passable values");
 
@@ -298,14 +305,14 @@ namespace FieldMetadataAPI.Repositories
                     var entry = result[metadata.FieldName];
 
                     // Add check table value if not null and not already added
-                    if (checkTableValue?.CheckTableID > 0 && 
+                    if (checkTableValue?.CheckTableID > 0 &&
                         !entry.CheckTableValues.Any(c => c.CheckTableID == checkTableValue.CheckTableID))
                     {
                         entry.CheckTableValues.Add(checkTableValue);
                     }
 
                     // Add passable value if not null and not already added
-                    if (passableValue?.PassableID > 0 && 
+                    if (passableValue?.PassableID > 0 &&
                         !entry.PassableValues.Any(p => p.PassableID == passableValue.PassableID))
                     {
                         entry.PassableValues.Add(passableValue);

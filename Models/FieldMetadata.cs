@@ -63,7 +63,7 @@ namespace FieldMetadataAPI.Models
         /// <summary>
         /// Table Group
         /// </summary>
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
 
         /// <summary>
         /// UI Control Type - COMPUTED (read-only)
@@ -79,5 +79,10 @@ namespace FieldMetadataAPI.Models
         /// Created Date
         /// </summary>
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+
+        /// <summary>
+        /// Subject
+        /// </summary>
+        public string? Subject { get; set; }
     }
 }

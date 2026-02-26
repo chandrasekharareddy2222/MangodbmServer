@@ -117,7 +117,7 @@
 					"response": []
 				},
 				{
-					"name": "Get All - Filter by TableGroup",
+					"name": "Get All - Filter by UIAssignmentBlock",
 					"request": {
 						"method": "GET",
 						"header": [
@@ -128,7 +128,7 @@
 							}
 						],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/field-metadata?tableGroup=CUSTOMER&pageNumber=1&pageSize=10",
+							"raw": "{{baseUrl}}/api/v1/field-metadata?UIAssignmentBlock=CUSTOMER&pageNumber=1&pageSize=10",
 							"host": [
 								"{{baseUrl}}"
 							],
@@ -153,7 +153,7 @@
 								}
 							]
 						},
-						"description": "Filter field metadata by TableGroup using exact match."
+						"description": "Filter field metadata by UIAssignmentBlock using exact match."
 					},
 					"response": []
 				},
@@ -225,7 +225,7 @@
 									"value": "CUSTOMER"
 								},
 								{
-									"key": "tableGroup",
+									"key": "UIAssignmentBlock",
 									"value": "CUSTOMER"
 								},
 								{
@@ -371,7 +371,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"fieldName\": \"REGION_CODE\",\n  \"dataElement\": \"REGIO\",\n  \"description\": \"Region Code\",\n  \"keyField\": null,\n  \"checkTable\": \"T005S\",\n  \"dataType\": \"CHAR\",\n  \"fieldLength\": 3,\n  \"decimals\": null,\n  \"hasDropdown\": \"X\",\n  \"tableGroup\": \"ADDRESS\",\n  \"isActive\": true\n}",
+							"raw": "{\n  \"fieldName\": \"REGION_CODE\",\n  \"dataElement\": \"REGIO\",\n  \"description\": \"Region Code\",\n  \"keyField\": null,\n  \"checkTable\": \"T005S\",\n  \"dataType\": \"CHAR\",\n  \"fieldLength\": 3,\n  \"decimals\": null,\n  \"hasDropdown\": \"X\",\n  \"UIAssignmentBlock\": \"ADDRESS\",\n  \"isActive\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -411,7 +411,7 @@
 						],
 						"body": {
 							"mode": "raw",
-							"raw": "{\n  \"fieldName\": \"BIRTH_DATE\",\n  \"dataElement\": \"GBDAT\",\n  \"description\": \"Date of Birth\",\n  \"keyField\": null,\n  \"checkTable\": null,\n  \"dataType\": \"DATS\",\n  \"fieldLength\": 8,\n  \"decimals\": null,\n  \"hasDropdown\": null,\n  \"tableGroup\": \"CUSTOMER\",\n  \"isActive\": true\n}",
+							"raw": "{\n  \"fieldName\": \"BIRTH_DATE\",\n  \"dataElement\": \"GBDAT\",\n  \"description\": \"Date of Birth\",\n  \"keyField\": null,\n  \"checkTable\": null,\n  \"dataType\": \"DATS\",\n  \"fieldLength\": 8,\n  \"decimals\": null,\n  \"hasDropdown\": null,\n  \"UIAssignmentBlock\": \"CUSTOMER\",\n  \"isActive\": true\n}",
 							"options": {
 								"raw": {
 									"language": "json"
@@ -470,7 +470,7 @@
 								"EMAIL_ADDRESS"
 							]
 						},
-						"description": "Updates a field metadata record. Only editable fields can be updated: Description, CheckTable, HasDropdown, TableGroup, IsActive."
+						"description": "Updates a field metadata record. Only editable fields can be updated: Description, CheckTable, HasDropdown, UIAssignmentBlock, IsActive."
 					},
 					"response": []
 				},
