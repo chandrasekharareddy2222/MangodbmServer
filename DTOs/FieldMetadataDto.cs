@@ -16,10 +16,11 @@ namespace FieldMetadataAPI.DTOs
         public string? ValidationType { get; set; }
         public string? HasDropdown { get; set; }
         public bool IsMandatory { get; set; }
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
         public string? UIControlType { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
+        public string? Subject { get; set; }
     }
 
     /// <summary>
@@ -36,8 +37,9 @@ namespace FieldMetadataAPI.DTOs
         public int? FieldLength { get; set; }
         public int? Decimals { get; set; }
         public string? HasDropdown { get; set; }
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
         public bool IsActive { get; set; } = true;
+        public string? Subject { get; set; }
         // Note: ValidationType, IsMandatory, UIControlType are computed - not included
     }
 
@@ -49,8 +51,9 @@ namespace FieldMetadataAPI.DTOs
         public string? Description { get; set; }
         public string? CheckTable { get; set; }
         public string? HasDropdown { get; set; }
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
         public bool IsActive { get; set; }
+        public string? Subject { get; set; }
     }
 
     /// <summary>
@@ -74,7 +77,7 @@ namespace FieldMetadataAPI.DTOs
     public class FieldMetadataQueryDto
     {
         public string? FieldName { get; set; }
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
         public string? DataType { get; set; }
         public int PageNumber { get; set; } = 1;
         public int PageSize { get; set; } = 10;

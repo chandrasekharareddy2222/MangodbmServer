@@ -46,9 +46,9 @@ namespace FieldMetadataAPI.Validators
                 .MaximumLength(1).WithMessage("HasDropdown must be a single character.")
                 .When(x => !string.IsNullOrEmpty(x.HasDropdown));
 
-            RuleFor(x => x.TableGroup)
+            RuleFor(x => x.UIAssignmentBlock)
                 .MaximumLength(100).WithMessage("TableGroup cannot exceed 100 characters.")
-                .When(x => !string.IsNullOrEmpty(x.TableGroup));
+                .When(x => !string.IsNullOrEmpty(x.UIAssignmentBlock));
         }
     }
 
@@ -71,9 +71,9 @@ namespace FieldMetadataAPI.Validators
                 .MaximumLength(1).WithMessage("HasDropdown must be a single character.")
                 .When(x => !string.IsNullOrEmpty(x.HasDropdown));
 
-            RuleFor(x => x.TableGroup)
+            RuleFor(x => x.UIAssignmentBlock)
                 .MaximumLength(100).WithMessage("TableGroup cannot exceed 100 characters.")
-                .When(x => !string.IsNullOrEmpty(x.TableGroup));
+                .When(x => !string.IsNullOrEmpty(x.UIAssignmentBlock));
         }
     }
 
@@ -95,9 +95,9 @@ namespace FieldMetadataAPI.Validators
                 .MaximumLength(100).WithMessage("FieldName cannot exceed 100 characters.")
                 .When(x => !string.IsNullOrEmpty(x.FieldName));
 
-            RuleFor(x => x.TableGroup)
+            RuleFor(x => x.UIAssignmentBlock)
                 .MaximumLength(100).WithMessage("TableGroup cannot exceed 100 characters.")
-                .When(x => !string.IsNullOrEmpty(x.TableGroup));
+                .When(x => !string.IsNullOrEmpty(x.UIAssignmentBlock));
 
             RuleFor(x => x.DataType)
                 .MaximumLength(50).WithMessage("DataType cannot exceed 50 characters.")

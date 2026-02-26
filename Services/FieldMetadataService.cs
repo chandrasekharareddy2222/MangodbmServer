@@ -3,6 +3,13 @@ using FieldMetadataAPI.Models;
 using FieldMetadataAPI.Repositories;
 using FluentValidation;
 using System.Text;
+using Microsoft.AspNetCore.Mvc;
+using FieldMetadataAPI.Services;
+using CsvHelper;
+using CsvHelper.Configuration;
+using System.Globalization;
+using ExcelDataReader;
+using System.Data;
 
 namespace FieldMetadataAPI.Services
 {
@@ -42,7 +49,7 @@ namespace FieldMetadataAPI.Services
 
             var items = await _repository.GetAllAsync(
                 query.FieldName,
-                query.TableGroup,
+                query.UIAssignmentBlock,
                 query.DataType,
                 query.PageNumber,
                 query.PageSize
@@ -50,7 +57,7 @@ namespace FieldMetadataAPI.Services
 
             var totalCount = await _repository.GetTotalCountAsync(
                 query.FieldName,
-                query.TableGroup,
+                query.UIAssignmentBlock,
                 query.DataType
             );
 
@@ -95,7 +102,8 @@ namespace FieldMetadataAPI.Services
                 FieldLength = createDto.FieldLength,
                 Decimals = createDto.Decimals,
                 HasDropdown = createDto.HasDropdown,
-                TableGroup = createDto.TableGroup,
+                UIAssignmentBlock = createDto.UIAssignmentBlock,
+                Subject = createDto.Subject,
                 IsActive = createDto.IsActive,
                 CreatedDate = DateTime.UtcNow
                 // ValidationType, IsMandatory, UIControlType are computed - not set here
@@ -123,8 +131,9 @@ namespace FieldMetadataAPI.Services
             existing.Description = updateDto.Description;
             existing.CheckTable = updateDto.CheckTable;
             existing.HasDropdown = updateDto.HasDropdown;
-            existing.TableGroup = updateDto.TableGroup;
+            existing.UIAssignmentBlock = updateDto.UIAssignmentBlock;
             existing.IsActive = updateDto.IsActive;
+            existing.Subject= updateDto.Subject;
 
             var rowsAffected = await _repository.UpdateAsync(fieldName, existing);
             return rowsAffected > 0;
@@ -160,7 +169,8 @@ namespace FieldMetadataAPI.Services
                 ValidationType = entity.ValidationType,
                 HasDropdown = entity.HasDropdown,
                 IsMandatory = entity.IsMandatory,
-                TableGroup = entity.TableGroup,
+                UIAssignmentBlock = entity.UIAssignmentBlock,
+                Subject = entity.Subject,
                 UIControlType = entity.UIControlType,
                 IsActive = entity.IsActive,
                 CreatedDate = entity.CreatedDate
@@ -189,7 +199,8 @@ namespace FieldMetadataAPI.Services
                     Decimals = metadata.Decimals,
                     ValidationType = metadata.ValidationType,
                     HasDropdown = !string.IsNullOrEmpty(metadata.HasDropdown) && metadata.HasDropdown == "X",
-                    TableGroup = metadata.TableGroup,
+                    UIAssignmentBlock = metadata.UIAssignmentBlock,
+                    Subject = metadata.Subject,
                     UIControlType = metadata.UIControlType,
                     IsActive = metadata.IsActive,
                     CreatedDate = metadata.CreatedDate,
@@ -377,6 +388,7 @@ namespace FieldMetadataAPI.Services
             string? dataType = row.Datatype?.Trim().ToUpper() ?? "";
             int fieldLength = int.TryParse(row.Length, out var len) ? len : 0;
             int decimals = int.TryParse(row.Decimals, out var dec) ? dec : 0;
+            string? subject = string.IsNullOrWhiteSpace(row.Subject?.Trim())? null : row.Subject.Trim();
 
             // Handle HasDropdown: if PossibleValues contains "Possible values", set to 'X'
             string? hasDropdown = null;
@@ -390,7 +402,7 @@ namespace FieldMetadataAPI.Services
             }
 
             // Auto-categorize TableGroup
-            string tableGroup = AutoCategorizeTableGroup(normalizedFieldName, dataType, checkTable);
+            string UIAssignmentBlock = AutoCategorizeTableGroup(normalizedFieldName, dataType, checkTable);
 
             return new CreateFieldMetadataDto
             {
@@ -403,7 +415,8 @@ namespace FieldMetadataAPI.Services
                 FieldLength = fieldLength,
                 Decimals = decimals,
                 HasDropdown = hasDropdown,
-                TableGroup = tableGroup
+                UIAssignmentBlock = UIAssignmentBlock,
+                Subject = subject
             };
         }
 
@@ -452,7 +465,8 @@ namespace FieldMetadataAPI.Services
                 FieldLength = dto.FieldLength,
                 Decimals = dto.Decimals,
                 HasDropdown = dto.HasDropdown,
-                TableGroup = dto.TableGroup
+                UIAssignmentBlock = dto.UIAssignmentBlock,
+                Subject = dto.Subject,
             };
         }
 

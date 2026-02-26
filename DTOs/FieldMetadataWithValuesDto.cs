@@ -48,12 +48,13 @@ namespace FieldMetadataAPI.DTOs
         public int? Decimals { get; set; }
         public string? ValidationType { get; set; }
         public bool HasDropdown { get; set; }
-        public string? TableGroup { get; set; }
+        public string? UIAssignmentBlock { get; set; }
         public string? UIControlType { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public DateTime? ModifiedDate { get; set; }
         public List<CheckTableValueDto>? CheckTableValues { get; set; }
         public List<PassableValueDto>? PassableValues { get; set; }
+        public string? Subject { get; set; }
     }
 }
