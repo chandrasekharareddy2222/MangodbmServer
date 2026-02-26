@@ -41,6 +41,7 @@ namespace FieldMetadataAPI.DTOs
         public string? Length { get; set; }
         public string? Decimals { get; set; }
         public string? PossibleValues { get; set; }
+        public string? Subject { get; set; }
 
         // Track result
         public ImportRowResult Result { get; set; } = new();

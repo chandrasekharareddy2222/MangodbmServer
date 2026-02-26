@@ -7,6 +7,8 @@ using FluentValidation;
 using CsvHelper;
 using CsvHelper.Configuration;
 using System.Globalization;
+using ExcelDataReader;
+using System.Data;
 
 namespace FieldMetadataAPI.Controllers
 {
@@ -215,21 +217,23 @@ namespace FieldMetadataAPI.Controllers
         /// </summary>
         /// <param name="file">CSV file containing field metadata records</param>
         /// <returns>Import summary with success/failure counts</returns>
-        [HttpPost("import-csv")]
+        [HttpPost("import")]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ImportCsv(IFormFile file)
         {
-            _logger.LogInformation("POST request received to import CSV file: {FileName}", file?.FileName);
+            _logger.LogInformation("POST request received to import CSV or EXCEL file: {FileName}", file?.FileName);
 
             if (file == null || file.Length == 0)
             {
                 return BadRequest(ApiResponse<object>.ErrorResponse("No file provided or file is empty"));
             }
 
-            if (!file.FileName.EndsWith(".csv", StringComparison.OrdinalIgnoreCase))
+            var extension = Path.GetExtension(file.FileName).ToLower();
+
+            if (extension != ".csv" && extension != ".xlsx" && extension != ".xls")
             {
-                return BadRequest(ApiResponse<object>.ErrorResponse("File must be a CSV file"));
+                return BadRequest(ApiResponse<object>.ErrorResponse("File must be a CSV or Excel file"));
             }
 
             try
@@ -237,32 +241,76 @@ namespace FieldMetadataAPI.Controllers
                 var csvRows = new List<CsvImportRow>();
 
                 using (var stream = file.OpenReadStream())
-                using (var reader = new StreamReader(stream))
-                using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
                 {
-                    csv.Context.RegisterClassMap<CsvImportRowMap>();
-                    try
+                    if (extension == ".csv")
                     {
-                        csvRows = csv.GetRecords<CsvImportRow>().ToList();
+                        using (var reader = new StreamReader(stream))
+                        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
+                        {
+                            csv.Context.RegisterClassMap<CsvImportRowMap>();
+                            try
+                            {
+                                csvRows = csv.GetRecords<CsvImportRow>().ToList();
+                            }
+                            catch (CsvHelper.BadDataException ex)
+                            {
+                                _logger.LogError(ex, "CSV or EXCEL header validation failed");
+                                return BadRequest(ApiResponse<object>.ErrorResponse($"CSV or EXCEL header format error: {ex.Message}"));
+                            }
+                        }
                     }
-                    catch (CsvHelper.BadDataException ex)
+                    else // Excel (.xlsx or .xls)
                     {
-                        _logger.LogError(ex, "CSV header validation failed");
-                        return BadRequest(ApiResponse<object>.ErrorResponse($"CSV header format error: {ex.Message}"));
+                        System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+
+                        using (var excelReader = ExcelReaderFactory.CreateReader(stream))
+                        {
+                            var result = excelReader.AsDataSet(new ExcelDataSetConfiguration
+                            {
+                                ConfigureDataTable = _ => new ExcelDataTableConfiguration
+                                {
+                                    UseHeaderRow = true
+                                }
+                            });
+                            var table = result.Tables[0];
+                            var subjectIndex = table.Columns
+                                .Cast<DataColumn>()
+                                .FirstOrDefault(c => c.ColumnName.Trim().Equals("Subject", StringComparison.OrdinalIgnoreCase))
+                                ?.Ordinal ?? -1;
+
+                            for (int i = 0; i < table.Rows.Count; i++) // skip header
+                            {
+                                var row = table.Rows[i];
+
+                                csvRows.Add(new CsvImportRow
+                                {
+                                    Field = row["Field"]?.ToString(),
+                                    KeyField = row["Key Field"]?.ToString(),
+                                    DataElement = row["Data element"]?.ToString(),
+                                    Datatype = row["Data Type"]?.ToString(),
+                                    Length = row["Length"]?.ToString(),
+                                    Decimals = row["Decimals"]?.ToString(),
+                                    Description = row["Short Desciption"]?.ToString(),
+                                    Checktable = row["Check Tabel"]?.ToString(),
+                                    PossibleValues = row["Possible values"]?.ToString(),
+                                    Subject = row.Table.Columns.Contains("Subject")? row["Subject"]?.ToString(): null
+                                });
+                            }
+                        }
                     }
                 }
 
                 if (csvRows.Count == 0)
                 {
-                    return BadRequest(ApiResponse<object>.ErrorResponse("CSV file contains no records"));
+                    return BadRequest(ApiResponse<object>.ErrorResponse("CSV or EXCEL file contains no records"));
                 }
 
-                _logger.LogInformation("CSV file parsed successfully. Total records: {Count}", csvRows.Count);
+                _logger.LogInformation("CSV or EXCEL file parsed successfully. Total records: {Count}", csvRows.Count);
 
                 // Call service to process CSV with tracking
                 var importResponse = await _service.ImportCsvWithTrackingAsync(csvRows, _createValidator);
 
-                _logger.LogInformation("CSV import completed. Inserted: {Inserted}, Failed: {Failed}, Skipped: {Skipped}", 
+                _logger.LogInformation("CSV or EXCEL  import completed. Inserted: {Inserted}, Failed: {Failed}, Skipped: {Skipped}", 
                     importResponse.Inserted, importResponse.Failed, importResponse.Skipped);
 
                 // Return JSON response with result file content as base64
@@ -283,13 +331,13 @@ namespace FieldMetadataAPI.Controllers
                             errorMessage = r.ErrorMessage
                         }).ToList()
                     },
-                    $"CSV import completed successfully. {importResponse.Inserted} record(s) inserted, {importResponse.Failed} failed, {importResponse.Skipped} skipped."
+                    $"CSV or EXCEL  import completed successfully. {importResponse.Inserted} record(s) inserted, {importResponse.Failed} failed, {importResponse.Skipped} skipped."
                 ));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error importing CSV file: {FileName}", file.FileName);
-                return BadRequest(ApiResponse<object>.ErrorResponse($"Error processing CSV file: {ex.Message}"));
+                _logger.LogError(ex, "Error importing CSV or EXCEL file: {FileName}", file.FileName);
+                return BadRequest(ApiResponse<object>.ErrorResponse($"Error processing CSV or EXCEL file: {ex.Message}"));
             }
         }
 
