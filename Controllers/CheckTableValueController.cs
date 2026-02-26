@@ -1,4 +1,5 @@
-﻿using FieldMetadataAPI.Services;
+﻿using FieldMetadataAPI.DTOs;
+using FieldMetadataAPI.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
@@ -23,7 +24,6 @@ namespace FieldMetadataAPI.Controllers
         /// Get Check Table Values
         /// Example:
         /// api/CheckTableValue?tableName=T134
-        /// api/CheckTableValue?tableName=T134&keyValue=FERT
         /// </summary>
         [HttpGet]
         public async Task<IActionResult> Get(
@@ -42,5 +42,75 @@ namespace FieldMetadataAPI.Controllers
 
             return Ok(result);
         }
+
+        /// <summary>
+        /// Creates a new Check Table Value record
+        /// 
+        [HttpPost]
+        public async Task<IActionResult> Create(
+                [FromBody] CreateCheckTableValueDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Invalid data.");
+
+            _logger.LogInformation(
+                "Creating CheckTableValue for {Table}",
+                dto.CheckTableName);
+
+            var id = await _service.CreateAsync(dto);
+
+            return Ok(new
+            {
+                Message = "Record created successfully",
+                CheckTableID = id
+            });
+        }
+
+        /// <summary>
+        /// Update Check Table Value
+        /// api/CheckTableValue
+        /// </summary>
+        [HttpPut("{id}")]
+        public async Task<IActionResult> Update(
+            int id,
+            [FromBody] UpdateCheckTableValueDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Invalid data.");
+
+            _logger.LogInformation(
+                "Updating CheckTableValue {Id}", id);
+
+            var updated = await _service.UpdateAsync(id, dto);
+
+            if (!updated)
+                return NotFound("Record not found.");
+
+            return Ok(new
+            {
+                Message = "Record updated successfully"
+            });
+        }
+        /// <summary>
+        /// Soft Delete Check Table Value
+        /// api/CheckTableValue
+        /// </summary>
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            _logger.LogInformation(
+                "Soft deleting CheckTableValue {Id}", id);
+
+            var deleted = await _service.DeleteAsync(id);
+
+            if (!deleted)
+                return NotFound("Record not found.");
+
+            return Ok(new
+            {
+                Message = "Record deleted successfully"
+            });
+        }
+
     }
 }

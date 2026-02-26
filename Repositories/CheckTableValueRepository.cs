@@ -8,6 +8,10 @@ namespace FieldMetadataAPI.Repositories
     public interface ICheckTableValueRepository
     {
         Task<IEnumerable<CheckTableValue>> GetByTableNameAsync(string tableName);
+        Task<CheckTableValue?> GetByIdAsync(int id);
+        Task<int> CreateAsync(CheckTableValue value);
+        Task<bool> UpdateAsync(int id, CheckTableValue value);
+        Task<bool> SoftDeleteAsync(int id);
 
 
     }
@@ -50,4 +54,61 @@ namespace FieldMetadataAPI.Repositories
 
             return await connection.QueryFirstOrDefaultAsync<CheckTableValue>(sql, new { Id = id });
         }
-    }   }
+
+        public async Task<int> CreateAsync(CheckTableValue value)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                value.CheckTableName,
+                value.KeyValue,
+                value.Description,
+                value.AdditionalInfo,
+                value.IsActive,
+                value.ValidFrom,
+                value.ValidTo,
+                value.CreatedBy
+            };
+
+            var id = await connection.ExecuteScalarAsync<int>(
+                "sp_InsertCheckTableValue",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return id;
+        }
+        public async Task<bool> UpdateAsync(int id, CheckTableValue value)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var parameters = new
+            {
+                CheckTableID = id,
+                value.Description,
+                value.AdditionalInfo,
+                value.IsActive,
+                value.ValidFrom,
+                value.ValidTo
+            };
+
+            var rows = await connection.ExecuteScalarAsync<int>(
+                "sp_UpdateCheckTableValue",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+        public async Task<bool> SoftDeleteAsync(int id)
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var rows = await connection.ExecuteScalarAsync<int>(
+                "sp_SoftDeleteCheckTableValue",
+                new { CheckTableID = id },
+                commandType: CommandType.StoredProcedure);
+
+            return rows > 0;
+        }
+    }   
+}   
