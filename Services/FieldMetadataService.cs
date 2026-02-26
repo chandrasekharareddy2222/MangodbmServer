@@ -324,10 +324,12 @@ namespace FieldMetadataAPI.Services
                     // Check for duplicate in database
                     if (existingFieldsSet.Contains(normalizedFieldName))
                     {
-                         result.ImportStatus = "FAILED";
+                        result.ImportStatus = "FAILED";
                         result.ErrorCode = "DUPLICATE_FIELD";
                         result.ErrorMessage = $"Field metadata with FieldName '{normalizedFieldName}' already exists";
                         response.Failed++;
+                        row.Result = result;
+                        continue;
                     }
 
                     // Transform and validate the record
