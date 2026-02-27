@@ -93,23 +93,14 @@ namespace FieldMetadataAPI.Services
                 throw new Exception("File is empty");
 
             using var reader = new StreamReader(file.OpenReadStream());
-
             var list = new List<CheckTableValue>();
-
             bool isHeader = true;
 
             while (!reader.EndOfStream)
             {
                 var line = await reader.ReadLineAsync();
-
-                if (isHeader)
-                {
-                    isHeader = false;
-                    continue;
-                }
-
-                if (string.IsNullOrWhiteSpace(line))
-                    continue;
+                if (isHeader) { isHeader = false; continue; }
+                if (string.IsNullOrWhiteSpace(line)) continue;
 
                 var columns = line.Split(',');
 
@@ -126,7 +117,11 @@ namespace FieldMetadataAPI.Services
                 });
             }
 
-
+            // FIX: You must actually send this list to the database!
+            foreach (var item in list)
+            {
+                await _repository.CreateAsync(item);
+            }
 
             return true;
         }

@@ -128,23 +128,25 @@ namespace FieldMetadataAPI.Repositories
             var worksheet = package.Workbook.Worksheets[0];
             int rows = worksheet.Dimension.Rows;
 
-            using SqlConnection con = new SqlConnection(_connectionString);
-            await con.OpenAsync();
+            // FIX: Use the factory to ensure the connection is valid
+            using var connection = _connectionFactory.CreateConnection();
+            if (connection.State != ConnectionState.Open) connection.Open();
 
             for (int row = 2; row <= rows; row++)
             {
-                using SqlCommand cmd = new SqlCommand("sp_InsertCheckTableValue", con);
-                cmd.CommandType = CommandType.StoredProcedure;
+                var parameters = new
+                {
+                    CheckTableName = tableName,
+                    KeyValue = worksheet.Cells[row, 1].Text,
+                    Description = worksheet.Cells[row, 2].Text,
+                    AdditionalInfo = worksheet.Cells[row, 3].Text
+                };
 
-                cmd.Parameters.AddWithValue("@CheckTableName", tableName);
-                cmd.Parameters.AddWithValue("@KeyValue", worksheet.Cells[row, 1].Text);
-                cmd.Parameters.AddWithValue("@Description", worksheet.Cells[row, 2].Text);
-                cmd.Parameters.AddWithValue("@AdditionalInfo",
-                    string.IsNullOrEmpty(worksheet.Cells[row, 3].Text)
-                    ? DBNull.Value
-                    : worksheet.Cells[row, 3].Text);
-
-                await cmd.ExecuteNonQueryAsync();
+                // Use Dapper to call the stored procedure consistently with your other methods
+                await connection.ExecuteAsync(
+                    "sp_InsertCheckTableValue",
+                    parameters,
+                    commandType: CommandType.StoredProcedure);
             }
         }
 
