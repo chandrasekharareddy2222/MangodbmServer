@@ -313,6 +313,13 @@ namespace FieldMetadataAPI.Controllers
                 _logger.LogInformation("CSV or EXCEL  import completed. Inserted: {Inserted}, Failed: {Failed}, Skipped: {Skipped}", 
                     importResponse.Inserted, importResponse.Failed, importResponse.Skipped);
 
+                // Clear cache after successful import so fresh data is loaded on next query
+                if (importResponse.Inserted > 0)
+                {
+                    _logger.LogInformation("Clearing cache after successful import");
+                    _service.ClearAllCaches();
+                }
+
                 // Return JSON response with result file content as base64
                 return Ok(ApiResponse<object>.SuccessResponse(
                     new

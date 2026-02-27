@@ -28,6 +28,7 @@ namespace FieldMetadataAPI.Services
         Task<int> BulkUpdateMandatoryAsync(BulkUpdateMandatoryDto bulkUpdateDto);
         Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator);
         Task<List<string>> GetActiveCheckTablesAsync();
+        void ClearAllCaches();
     }
 
     /// <summary>
@@ -179,6 +180,12 @@ namespace FieldMetadataAPI.Services
         private void InvalidateCache()
         {
             _logger.LogInformation("Invalidating field metadata cache");
+            _memoryCache.Remove(CacheKeyAllWithValues);
+        }
+
+        public void ClearAllCaches()
+        {
+            _logger.LogInformation("Clearing all field metadata caches");
             _memoryCache.Remove(CacheKeyAllWithValues);
         }
 
@@ -509,6 +516,8 @@ namespace FieldMetadataAPI.Services
                 HasDropdown = dto.HasDropdown,
                 UIAssignmentBlock = dto.UIAssignmentBlock,
                 Subject = dto.Subject,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
             };
         }
 
