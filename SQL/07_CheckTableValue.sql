@@ -1,31 +1,50 @@
-﻿CREATE OR ALTER PROCEDURE sp_CheckTableValueExists
+﻿
+CREATE OR ALTER PROCEDURE sp_InsertCheckTableValue
 (
     @CheckTableName VARCHAR(50),
-    @KeyValue VARCHAR(100) = NULL
+    @KeyValue VARCHAR(100),
+    @Description NVARCHAR(200),
+    @AdditionalInfo NVARCHAR(MAX),
+    @IsActive BIT,
+    @ValidFrom DATETIME,
+    @ValidTo DATETIME,
+    @CreatedBy NVARCHAR(50)
 )
 AS
 BEGIN
     SET NOCOUNT ON;
 
-    SELECT 
-        CheckTableID,
-        CheckTableName,
-        KeyValue,
-        Description,
-        AdditionalInfo,
-        IsActive,
-        ValidFrom,
-        ValidTo,
-        CreatedDate,
-        CreatedBy
-    FROM Check_Table_Values
-    WHERE CheckTableName = @CheckTableName
-      AND (@KeyValue IS NULL OR KeyValue = @KeyValue)
-      AND IsActive = 1
-      AND GETDATE() BETWEEN ValidFrom AND ValidTo
-    ORDER BY KeyValue;
+    BEGIN TRY
+        INSERT INTO Check_Table_Values
+        (
+            CheckTableName,
+            KeyValue,
+            Description,
+            AdditionalInfo,
+            IsActive,
+            ValidFrom,
+            ValidTo,
+            CreatedDate,
+            CreatedBy
+        )
+        OUTPUT INSERTED.CheckTableID   -- <<< returns the new ID
+        VALUES
+        (
+            @CheckTableName,
+            @KeyValue,
+            @Description,
+            @AdditionalInfo,
+            @IsActive,
+            @ValidFrom,
+            @ValidTo,
+            GETDATE(),
+            @CreatedBy
+        );
+    END TRY
+    BEGIN CATCH
+        SELECT ERROR_MESSAGE() AS ERROR;
+    END CATCH
 END
-
 EXEC sp_CheckTableValueExists 'T134'
 
 GO
@@ -47,7 +66,7 @@ BEGIN
     DECLARE @TableName VARCHAR(50);
 
     SELECT @TableName = CheckTableName
-    FROM Check_Table_Values
+    FROM Check_Table_Value
     WHERE CheckTableID = @CheckTableID;
 
     IF EXISTS (
