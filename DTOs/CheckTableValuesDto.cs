@@ -33,6 +33,11 @@
         public DateTime ValidFrom { get; set; }
         public DateTime ValidTo { get; set; }
     }
-   
+    public class UploadCsvDto
+    {
+        public string TableName { get; set; }
+
+        public IFormFile File { get; set; }
+    }
 
 }

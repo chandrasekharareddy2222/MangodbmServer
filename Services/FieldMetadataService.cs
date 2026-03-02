@@ -14,10 +14,37 @@
 
     namespace FieldMetadataAPI.Services
     {
+<<<<<<< HEAD
         /// <summary>
         /// Service interface for Field Metadata business logic
         /// </summary>
         public interface IFieldMetadataService
+=======
+        Task<PagedResponse<FieldMetadataDto>> GetAllAsync(FieldMetadataQueryDto query);
+        Task<FieldMetadataDto?> GetByIdAsync(string fieldName);
+        Task<FieldMetadataDto> CreateAsync(CreateFieldMetadataDto createDto);
+        Task<bool> UpdateAsync(string fieldName, UpdateFieldMetadataDto updateDto);
+        Task<bool> DeleteAsync(string fieldName);
+        Task<List<FieldMetadataWithValuesDto>> GetAllWithValuesAsync();
+        Task<int> BulkUpdateMandatoryAsync(BulkUpdateMandatoryDto bulkUpdateDto);
+        Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator);
+        Task<List<string>> GetActiveCheckTablesAsync();
+        void ClearAllCaches();
+    }
+
+    /// <summary>
+    /// Service implementation for Field Metadata business logic
+    /// </summary>
+    public class FieldMetadataService : IFieldMetadataService
+    {
+        private readonly IFieldMetadataRepository _repository;
+        private readonly ILogger<FieldMetadataService> _logger;
+        private readonly IMemoryCache _memoryCache;
+        private const string CacheKeyAllWithValues = "field_metadata_with_values";
+        private static readonly TimeSpan CacheExpiration = TimeSpan.FromMinutes(30);
+
+        public FieldMetadataService(IFieldMetadataRepository repository, ILogger<FieldMetadataService> logger, IMemoryCache memoryCache)
+>>>>>>> fe27861aa3e7e307e01b9a6632280393ae7adb6c
         {
             Task<PagedResponse<FieldMetadataDto>> GetAllAsync(FieldMetadataQueryDto query);
             Task<FieldMetadataDto?> GetByIdAsync(string fieldName);
@@ -104,7 +131,150 @@
 
                 var dtoItems = items.Select(MapToDto).ToList();
 
+<<<<<<< HEAD
                 return new PagedResponse<FieldMetadataDto>
+=======
+            // Business Rule: FieldName must be unique
+            if (await _repository.ExistsAsync(createDto.FieldName))
+            {
+                _logger.LogWarning("Field metadata already exists: {FieldName}", createDto.FieldName);
+                throw new InvalidOperationException($"Field metadata with FieldName '{createDto.FieldName}' already exists.");
+            }
+
+            var entity = new FieldMetadata
+            {
+                FieldName = createDto.FieldName,
+                DataElement = createDto.DataElement,
+                Description = createDto.Description,
+                KeyField = createDto.KeyField,
+                CheckTable = createDto.CheckTable,
+                DataType = createDto.DataType,
+                FieldLength = createDto.FieldLength,
+                Decimals = createDto.Decimals,
+                HasDropdown = createDto.HasDropdown,
+                UIAssignmentBlock = createDto.UIAssignmentBlock,
+                Subject = createDto.Subject,
+                IsActive = createDto.IsActive,
+                CreatedDate = DateTime.UtcNow
+                // ValidationType, IsMandatory, UIControlType are computed - not set here
+            };
+
+            await _repository.CreateAsync(entity);
+
+            // Invalidate cache
+            InvalidateCache();
+
+            // Retrieve the created entity to get computed columns
+            var created = await _repository.GetByIdAsync(createDto.FieldName);
+            return MapToDto(created!);
+        }
+
+        public async Task<bool> UpdateAsync(string fieldName, UpdateFieldMetadataDto updateDto)
+        {
+            _logger.LogInformation("Updating field metadata: {FieldName}", fieldName);
+
+            var existing = await _repository.GetByIdAsync(fieldName);
+            if (existing == null)
+            {
+                _logger.LogWarning("Field metadata not found: {FieldName}", fieldName);
+                return false;
+            }
+
+            // Update only editable fields
+            existing.Description = updateDto.Description;
+            existing.CheckTable = updateDto.CheckTable;
+            existing.HasDropdown = updateDto.HasDropdown;
+            existing.UIAssignmentBlock = updateDto.UIAssignmentBlock;
+            existing.IsActive = updateDto.IsActive;
+            existing.Subject= updateDto.Subject;
+
+            var rowsAffected = await _repository.UpdateAsync(fieldName, existing);
+            
+            // Invalidate cache on successful update
+            if (rowsAffected > 0)
+            {
+                InvalidateCache();
+            }
+            
+            return rowsAffected > 0;
+        }
+
+        public async Task<bool> DeleteAsync(string fieldName)
+        {
+            _logger.LogInformation("Soft deleting field metadata: {FieldName}", fieldName);
+
+            var existing = await _repository.GetByIdAsync(fieldName);
+            if (existing == null)
+            {
+                _logger.LogWarning("Field metadata not found: {FieldName}", fieldName);
+                return false;
+            }
+
+            var rowsAffected = await _repository.SoftDeleteAsync(fieldName);
+            
+            // Invalidate cache on successful delete
+            if (rowsAffected > 0)
+            {
+                InvalidateCache();
+            }
+            
+            return rowsAffected > 0;
+        }
+
+        private void InvalidateCache()
+        {
+            _logger.LogInformation("Invalidating field metadata cache");
+            _memoryCache.Remove(CacheKeyAllWithValues);
+        }
+
+        public void ClearAllCaches()
+        {
+            _logger.LogInformation("Clearing all field metadata caches");
+            _memoryCache.Remove(CacheKeyAllWithValues);
+        }
+
+        private FieldMetadataDto MapToDto(FieldMetadata entity)
+        {
+            return new FieldMetadataDto
+            {
+                FieldName = entity.FieldName,
+                DataElement = entity.DataElement,
+                Description = entity.Description,
+                KeyField = entity.KeyField,
+                CheckTable = entity.CheckTable,
+                DataType = entity.DataType,
+                FieldLength = entity.FieldLength,
+                Decimals = entity.Decimals,
+                ValidationType = entity.ValidationType,
+                HasDropdown = entity.HasDropdown,
+                IsMandatory = entity.IsMandatory,
+                UIAssignmentBlock = entity.UIAssignmentBlock,
+                Subject = entity.Subject,
+                UIControlType = entity.UIControlType,
+                IsActive = entity.IsActive,
+                CreatedDate = entity.CreatedDate
+            };
+        }
+
+        public async Task<List<FieldMetadataWithValuesDto>> GetAllWithValuesAsync()
+        {
+            _logger.LogInformation("Getting all field metadata with check table and passable values");
+
+            // Try to get from cache first
+            if (_memoryCache.TryGetValue(CacheKeyAllWithValues, out List<FieldMetadataWithValuesDto> cachedResult))
+            {
+                _logger.LogInformation("Returning cached field metadata with values");
+                return cachedResult;
+            }
+
+            var data = await _repository.GetAllWithValuesAsync();
+
+            var result = data.Select(kvp =>
+            {
+                var (metadata, checkTableValues, passableValues) = kvp.Value;
+
+                return new FieldMetadataWithValuesDto
+>>>>>>> fe27861aa3e7e307e01b9a6632280393ae7adb6c
                 {
                     Items = dtoItems,
                     TotalCount = totalCount,
@@ -557,7 +727,81 @@
                     return $"\"{value.Replace("\"", "\"\"")}\"";
                 }
 
+<<<<<<< HEAD
                 return value;
+=======
+            if (dataType == "QUAN" || dataType == "DEC" || dataType == "INT2")
+                return "Quantities";
+
+            if (dataType == "DATS")
+                return "Dates";
+
+            if (dataType == "UNIT")
+                return "Units of Measure";
+
+            if (!string.IsNullOrWhiteSpace(checkTable) && checkTable.StartsWith("T", StringComparison.OrdinalIgnoreCase))
+                return "Master Data";
+
+            if (fieldName.Contains("FIBER", StringComparison.OrdinalIgnoreCase))
+                return "Textile Composition";
+
+            if (fieldName.StartsWith("/VSO", StringComparison.OrdinalIgnoreCase))
+                return "Vehicle Space Optimization";
+
+            if (fieldName.StartsWith("/CWM", StringComparison.OrdinalIgnoreCase))
+                return "Catch Weight Management";
+
+            if (fieldName.StartsWith("/BEV", StringComparison.OrdinalIgnoreCase))
+                return "Beverage Industry";
+
+            return "General Attributes";
+        }
+
+        private FieldMetadata MapDtoToModel(CreateFieldMetadataDto dto)
+        {
+            return new FieldMetadata
+            {
+                FieldName = dto.FieldName,
+                DataElement = dto.DataElement,
+                Description = dto.Description,
+                KeyField = dto.KeyField,
+                CheckTable = dto.CheckTable,
+                DataType = dto.DataType,
+                FieldLength = dto.FieldLength,
+                Decimals = dto.Decimals,
+                HasDropdown = dto.HasDropdown,
+                UIAssignmentBlock = dto.UIAssignmentBlock,
+                Subject = dto.Subject,
+                IsActive = true,
+                CreatedDate = DateTime.UtcNow
+            };
+        }
+
+        private byte[] GenerateResultCsv(List<CsvImportRow> rows)
+        {
+            var sb = new StringBuilder();
+
+            // Write header with original columns + tracking columns
+            sb.AppendLine("Field,Data element,Description,Key Field,Checktable,Datatype,Length,Decimals,Possible values,ImportStatus,ErrorCode,ErrorMessage");
+
+            // Write rows with their results
+            foreach (var row in rows)
+            {
+                var fieldEscaped = EscapeCsvField(row.Field);
+                var dataElementEscaped = EscapeCsvField(row.DataElement);
+                var descriptionEscaped = EscapeCsvField(row.Description);
+                var keyFieldEscaped = EscapeCsvField(row.KeyField);
+                var checktableEscaped = EscapeCsvField(row.Checktable);
+                var datatypeEscaped = EscapeCsvField(row.Datatype);
+                var lengthEscaped = EscapeCsvField(row.Length);
+                var decimalsEscaped = EscapeCsvField(row.Decimals);
+                var possibleValuesEscaped = EscapeCsvField(row.PossibleValues);
+                var statusEscaped = EscapeCsvField(row.Result.ImportStatus);
+                var errorCodeEscaped = EscapeCsvField(row.Result.ErrorCode);
+                var errorMessageEscaped = EscapeCsvField(row.Result.ErrorMessage);
+
+                sb.AppendLine($"{fieldEscaped},{dataElementEscaped},{descriptionEscaped},{keyFieldEscaped},{checktableEscaped},{datatypeEscaped},{lengthEscaped},{decimalsEscaped},{possibleValuesEscaped},{statusEscaped},{errorCodeEscaped},{errorMessageEscaped}");
+>>>>>>> fe27861aa3e7e307e01b9a6632280393ae7adb6c
             }
         
             public async Task<List<string>> GetActiveCheckTablesAsync()

@@ -6,7 +6,9 @@ using Microsoft.AspNetCore.Mvc;
 namespace FieldMetadataAPI.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/check-table-value")]
+    [ApiVersion("1.0")]
+    [Produces("application/json")]
     public class CheckTableValueController : ControllerBase
     {
         private readonly ICheckTableValueService _service;
@@ -25,6 +27,7 @@ namespace FieldMetadataAPI.Controllers
         /// Example:
         /// api/CheckTableValue?tableName=T134
         /// </summary>
+      
         [HttpGet]
         public async Task<IActionResult> Get(
             [FromQuery] string tableName)
@@ -112,5 +115,20 @@ namespace FieldMetadataAPI.Controllers
             });
         }
 
+        [HttpPost("upload/{tableName}")]
+        public async Task<IActionResult> UploadCsv(
+      string tableName,
+      IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("File is empty");
+
+            var result = await _service.UploadCsvAsync(tableName, file);
+
+            return Ok(new
+            {
+                Message = "CSV Uploaded Successfully"
+            });
+        }
     }
 }
