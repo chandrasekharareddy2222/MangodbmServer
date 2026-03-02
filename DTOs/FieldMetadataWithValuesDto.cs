@@ -5,6 +5,7 @@ namespace FieldMetadataAPI.DTOs
     /// </summary>
     public class CheckTableValueDto
     {
+        public int CheckTableId { get; set; }
         public string TableName { get; set; } = string.Empty;
         public string KeyValue { get; set; } = string.Empty;
         public string? Description { get; set; }

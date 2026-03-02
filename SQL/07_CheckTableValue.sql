@@ -66,7 +66,7 @@ BEGIN
     DECLARE @TableName VARCHAR(50);
 
     SELECT @TableName = CheckTableName
-    FROM Check_Table_Value
+    FROM Check_Table_Values
     WHERE CheckTableID = @CheckTableID;
 
     IF EXISTS (
@@ -113,52 +113,5 @@ BEGIN
 
     SELECT @@ROWCOUNT;
 END
-GO
-CREATE OR ALTER PROCEDURE sp_InsertCheckTableValue
-(
-    @CheckTableName VARCHAR(50),
-    @KeyValue VARCHAR(100),
-    @Description VARCHAR(255),
-    @AdditionalInfo NVARCHAR(MAX) = NULL
-)
-AS
-BEGIN
-    SET NOCOUNT ON;
 
-    SET @KeyValue = LTRIM(RTRIM(@KeyValue));
-    SET @CheckTableName = LTRIM(RTRIM(@CheckTableName));
 
-    IF NOT EXISTS
-    (
-        SELECT 1
-        FROM Check_Table_Values
-        WHERE LTRIM(RTRIM(CheckTableName)) = @CheckTableName
-          AND LTRIM(RTRIM(KeyValue)) = @KeyValue
-    )
-    BEGIN
-        INSERT INTO Check_Table_Values
-        (
-            CheckTableName,
-            KeyValue,
-            Description,
-            AdditionalInfo,
-            IsActive,
-            ValidFrom,
-            ValidTo,
-            CreatedDate,
-            CreatedBy
-        )
-        VALUES
-        (
-            @CheckTableName,
-            @KeyValue,
-            @Description,
-            @AdditionalInfo,
-            1,
-            GETDATE(),
-            '9999-12-31',
-            GETDATE(),
-            'SYSTEM'
-        );
-    END
-END

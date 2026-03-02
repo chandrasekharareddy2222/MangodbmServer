@@ -18,14 +18,17 @@ namespace FieldMetadataAPI.Services
     {
         private readonly ICheckTableValueRepository _repository;
         private readonly ILogger<CheckTableValueService> _logger;
+        private readonly IFieldMetadataService _fieldMetadataService;
        
         public CheckTableValueService(
             ICheckTableValueRepository repository,
-            ILogger<CheckTableValueService> logger)
+            ILogger<CheckTableValueService> logger,
+            IFieldMetadataService fieldMetadataService)
         {
 
             _repository = repository;
             _logger = logger;
+            _fieldMetadataService = fieldMetadataService ?? throw new ArgumentNullException(nameof(fieldMetadataService));
         }
 
         public async Task<List<CheckTableValueDto>> GetByTableNameAsync(string tableName)
@@ -34,6 +37,7 @@ namespace FieldMetadataAPI.Services
 
             return values.Select(v => new CheckTableValueDto
             {
+                CheckTableId = v.CheckTableID,
                 TableName = v.CheckTableName,
                 KeyValue = v.KeyValue,
                 Description = v.Description,
@@ -59,7 +63,13 @@ namespace FieldMetadataAPI.Services
                 CreatedBy = dto.CreatedBy
             };
 
-            return await _repository.CreateAsync(entity);
+            var id = await _repository.CreateAsync(entity);
+            
+            // Clear field metadata cache since check table values have been modified
+            _fieldMetadataService.ClearAllCaches();
+            _logger.LogInformation("Cleared field metadata cache after creating check table value {Id}", id);
+            
+            return id;
         }
         public async Task<bool> UpdateAsync(
                     int id,
@@ -76,7 +86,16 @@ namespace FieldMetadataAPI.Services
             existing.ValidFrom = dto.ValidFrom;
             existing.ValidTo = dto.ValidTo;
 
-            return await _repository.UpdateAsync(id, existing);
+            var updated = await _repository.UpdateAsync(id, existing);
+            
+            if (updated)
+            {
+                // Clear field metadata cache since check table values have been modified
+                _fieldMetadataService.ClearAllCaches();
+                _logger.LogInformation("Cleared field metadata cache after updating check table value {Id}", id);
+            }
+            
+            return updated;
         }
         public async Task<bool> DeleteAsync(int id)
         {
@@ -85,7 +104,16 @@ namespace FieldMetadataAPI.Services
             if (existing == null || !existing.IsActive)
                 return false;
 
-            return await _repository.SoftDeleteAsync(id);
+            var deleted = await _repository.SoftDeleteAsync(id);
+            
+            if (deleted)
+            {
+                // Clear field metadata cache since check table values have been modified
+                _fieldMetadataService.ClearAllCaches();
+                _logger.LogInformation("Cleared field metadata cache after deleting check table value {Id}", id);
+            }
+            
+            return deleted;
         }
         public async Task<bool> UploadCsvAsync(string tableName, IFormFile file)
         {
@@ -122,6 +150,10 @@ namespace FieldMetadataAPI.Services
             {
                 await _repository.CreateAsync(item);
             }
+            
+            // Clear field metadata cache since multiple check table values have been added
+            _fieldMetadataService.ClearAllCaches();
+            _logger.LogInformation("Cleared field metadata cache after CSV upload for table {TableName} with {Count} records", tableName, list.Count);
 
             return true;
         }
