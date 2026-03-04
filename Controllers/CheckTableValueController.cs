@@ -115,13 +115,19 @@ namespace FieldMetadataAPI.Controllers
             });
         }
 
-        [HttpPost("upload/{tableName}")]
+        [HttpPost("upload")]
         public async Task<IActionResult> UploadCsv(
-      string tableName,
-      IFormFile file)
+            [FromQuery] string tableName,
+            IFormFile file)
         {
+            if (string.IsNullOrWhiteSpace(tableName))
+                return BadRequest("tableName is required.");
+
             if (file == null || file.Length == 0)
                 return BadRequest("File is empty");
+
+            _logger.LogInformation(
+                "Uploading CSV for table {TableName}", tableName);
 
             var result = await _service.UploadCsvAsync(tableName, file);
 

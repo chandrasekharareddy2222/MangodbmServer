@@ -42,8 +42,7 @@ namespace FieldMetadataAPI.Repositories
                 SELECT *
                 FROM Check_Table_Values
                 WHERE CheckTableName = @TableName
-                AND IsActive = 1
-                ORDER BY KeyValue";
+                ORDER BY CreatedDate DESC";
 
             return await connection.QueryAsync<CheckTableValue>(sql, new { TableName = tableName });
         }
