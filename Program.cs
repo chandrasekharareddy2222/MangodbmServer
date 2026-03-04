@@ -6,9 +6,12 @@ using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Versioning;
+using OfficeOpenXml;
 using Serilog;
+using OfficeOpenXml;
 
 var builder = WebApplication.CreateBuilder(args);
+ExcelPackage.License.SetNonCommercialOrganization("Databridge");
 
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()

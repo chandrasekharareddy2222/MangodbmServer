@@ -114,9 +114,8 @@ namespace FieldMetadataAPI.Controllers
                 Message = "Record deleted successfully"
             });
         }
-
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadCsv(
+        public async Task<IActionResult> UploadFile(
             [FromQuery] string tableName,
             IFormFile file)
         {
@@ -126,14 +125,15 @@ namespace FieldMetadataAPI.Controllers
             if (file == null || file.Length == 0)
                 return BadRequest("File is empty");
 
-            _logger.LogInformation(
-                "Uploading CSV for table {TableName}", tableName);
+            _logger.LogInformation("Uploading file for table {TableName}. File={FileName}", tableName, file.FileName);
 
-            var result = await _service.UploadCsvAsync(tableName, file);
+            var (inserted, skipped) = await _service.UploadFileAsync(tableName, file);
 
             return Ok(new
             {
-                Message = "CSV Uploaded Successfully"
+                Message = "Upload completed",
+                Inserted = inserted,
+                Skipped = skipped
             });
         }
     }

@@ -3,6 +3,7 @@ using FieldMetadataAPI.DTOs;
 using FieldMetadataAPI.Models;
 using FieldMetadataAPI.Repositories;
 using Microsoft.AspNetCore.Connections;
+using ClosedXML.Excel;
 
 namespace FieldMetadataAPI.Services
 {
@@ -12,7 +13,8 @@ namespace FieldMetadataAPI.Services
         Task<int> CreateAsync(CreateCheckTableValueDto dto);
         Task<bool> UpdateAsync(int id, UpdateCheckTableValueDto dto);
         Task<bool> DeleteAsync(int id);
-        Task<bool> UploadCsvAsync(string tableName, IFormFile file);
+        Task<(int inserted, int skipped)> UploadFileAsync(string tableName, IFormFile file);
+
     }
     public class CheckTableValueService : ICheckTableValueService
     {
@@ -29,6 +31,14 @@ namespace FieldMetadataAPI.Services
             _repository = repository;
             _logger = logger;
             _fieldMetadataService = fieldMetadataService ?? throw new ArgumentNullException(nameof(fieldMetadataService));
+        }
+        private static bool IsAnyRequiredEmpty(string? key, string? desc, string? addi)
+        {
+            // Change required rules here:
+            // If you want only KeyValue required -> return string.IsNullOrWhiteSpace(key);
+            return string.IsNullOrWhiteSpace(key)
+                || string.IsNullOrWhiteSpace(desc)
+                || string.IsNullOrWhiteSpace(addi);
         }
 
         public async Task<List<CheckTableValueDto>> GetByTableNameAsync(string tableName)
@@ -115,47 +125,100 @@ namespace FieldMetadataAPI.Services
             
             return deleted;
         }
-        public async Task<bool> UploadCsvAsync(string tableName, IFormFile file)
+        public async Task<(int inserted, int skipped)> UploadFileAsync(string tableName, IFormFile file)
         {
+            if (string.IsNullOrWhiteSpace(tableName))
+                throw new Exception("tableName is required");
+
             if (file == null || file.Length == 0)
                 throw new Exception("File is empty");
 
+            var ext = Path.GetExtension(file.FileName)?.ToLowerInvariant();
+
+            (int inserted, int skipped) result = ext switch
+            {
+                ".csv" => await UploadCsvInternal(tableName, file),
+                ".xlsx" => await UploadXlsxInternal(tableName, file),
+                _ => throw new Exception("Only .csv and .xlsx files are supported")
+            };
+
+            _fieldMetadataService.ClearAllCaches();
+            _logger.LogInformation("Cleared cache after upload for {TableName}. Inserted={Inserted}, Skipped={Skipped}",
+                tableName, result.inserted, result.skipped);
+
+            return result;
+        }
+
+        private async Task<(int inserted, int skipped)> UploadCsvInternal(string tableName, IFormFile file)
+        {
+            int inserted = 0, skipped = 0;
+
             using var reader = new StreamReader(file.OpenReadStream());
-            var list = new List<CheckTableValue>();
             bool isHeader = true;
 
             while (!reader.EndOfStream)
             {
                 var line = await reader.ReadLineAsync();
+
                 if (isHeader) { isHeader = false; continue; }
-                if (string.IsNullOrWhiteSpace(line)) continue;
+                if (string.IsNullOrWhiteSpace(line)) { skipped++; continue; }
 
-                var columns = line.Split(',');
+                var cols = line.Split(',');
 
-                list.Add(new CheckTableValue
+                var key = cols.ElementAtOrDefault(0)?.Trim();
+                var desc = cols.ElementAtOrDefault(1)?.Trim();
+                var addi = cols.ElementAtOrDefault(2)?.Trim();
+
+                // STRICT RULE: any required empty => skip row
+                if (IsAnyRequiredEmpty(key, desc, addi))
                 {
-                    CheckTableName = tableName,
-                    KeyValue = columns[0].Trim(),
-                    Description = columns.Length > 1 ? columns[1].Trim() : null,
-                    AdditionalInfo = columns.Length > 2 ? columns[2].Trim() : null,
-                    IsActive = true,
-                    ValidFrom = DateTime.Now,
-                    ValidTo = DateTime.Parse("9999-12-31"),
-                    CreatedBy = "CSV_UPLOAD"
-                });
+                    skipped++;
+                    continue;
+                }
+
+                await _repository.InsertFromUploadAsync(tableName, key!, desc!, addi!, "CSV_UPLOAD");
+                inserted++;
             }
 
-            // FIX: You must actually send this list to the database!
-            foreach (var item in list)
+            return (inserted, skipped);
+        }
+
+        private async Task<(int inserted, int skipped)> UploadXlsxInternal(string tableName, IFormFile file)
+        {
+            int inserted = 0, skipped = 0;
+
+            using var stream = new MemoryStream();
+            await file.CopyToAsync(stream);
+            stream.Position = 0;
+
+            using var workbook = new XLWorkbook(stream);
+            var ws = workbook.Worksheets.FirstOrDefault()
+                     ?? throw new Exception("No worksheet found in Excel file");
+
+            var used = ws.RangeUsed();
+            if (used == null) return (0, 0);
+
+            int firstDataRow = used.FirstRow().RowNumber() + 1; // skip header
+            int lastRow = used.LastRow().RowNumber();
+
+            for (int r = firstDataRow; r <= lastRow; r++)
             {
-                await _repository.CreateAsync(item);
-            }
-            
-            // Clear field metadata cache since multiple check table values have been added
-            _fieldMetadataService.ClearAllCaches();
-            _logger.LogInformation("Cleared field metadata cache after CSV upload for table {TableName} with {Count} records", tableName, list.Count);
+                var key = ws.Cell(r, 1).GetValue<string>()?.Trim();
+                var desc = ws.Cell(r, 2).GetValue<string>()?.Trim();
+                var addi = ws.Cell(r, 3).GetValue<string>()?.Trim();
 
-            return true;
+                // STRICT RULE: any required empty => skip row
+                if (IsAnyRequiredEmpty(key, desc, addi))
+                {
+                    skipped++;
+                    continue;
+                }
+
+                await _repository.InsertFromUploadAsync(tableName, key!, desc!, addi!, "XLSX_UPLOAD");
+                inserted++;
+            }
+
+            return (inserted, skipped);
         }
 
     }

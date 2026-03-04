@@ -14,7 +14,7 @@ namespace FieldMetadataAPI.Repositories
         Task<int> CreateAsync(CheckTableValue value);
         Task<bool> UpdateAsync(int id, CheckTableValue value);
         Task<bool> SoftDeleteAsync(int id);
-        Task UploadExcelAsync(string tableName, IFormFile file);
+        Task<int> InsertFromUploadAsync(string tableName, string keyValue, string? description, string? additionalInfo, string createdBy);
 
 
 
@@ -116,37 +116,35 @@ namespace FieldMetadataAPI.Repositories
 
             return rows > 0;
         }
-        public async Task UploadExcelAsync(string tableName, IFormFile file)
+        public async Task<int> InsertFromUploadAsync(
+      string tableName,
+      string keyValue,
+      string? description,
+      string? additionalInfo,
+      string createdBy)
         {
-            ExcelPackage.LicenseContext = LicenseContext.NonCommercial;
-
-            using var stream = new MemoryStream();
-            await file.CopyToAsync(stream);
-
-            using var package = new ExcelPackage(stream);
-            var worksheet = package.Workbook.Worksheets[0];
-            int rows = worksheet.Dimension.Rows;
-
-            // FIX: Use the factory to ensure the connection is valid
             using var connection = _connectionFactory.CreateConnection();
-            if (connection.State != ConnectionState.Open) connection.Open();
 
-            for (int row = 2; row <= rows; row++)
+            var parameters = new
             {
-                var parameters = new
-                {
-                    CheckTableName = tableName,
-                    KeyValue = worksheet.Cells[row, 1].Text,
-                    Description = worksheet.Cells[row, 2].Text,
-                    AdditionalInfo = worksheet.Cells[row, 3].Text
-                };
+                CheckTableName = tableName,
+                KeyValue = keyValue,
+                Description = description,
+                AdditionalInfo = additionalInfo,
+                IsActive = true,
+                ValidFrom = DateTime.Now,
+                ValidTo = DateTime.Parse("9999-12-31"),
+                CreatedBy = createdBy
+            };
 
-                // Use Dapper to call the stored procedure consistently with your other methods
-                await connection.ExecuteAsync(
-                    "sp_InsertCheckTableValue",
-                    parameters,
-                    commandType: CommandType.StoredProcedure);
-            }
+            // Make sure your sp_InsertCheckTableValue accepts these parameters.
+            // If your SP sets defaults itself, still ok to pass them (as long as SP params exist).
+            var id = await connection.ExecuteScalarAsync<int>(
+                "sp_InsertCheckTableValue",
+                parameters,
+                commandType: CommandType.StoredProcedure);
+
+            return id;
         }
 
 
