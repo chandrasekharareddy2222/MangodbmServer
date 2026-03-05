@@ -371,12 +371,20 @@
                     ResultFileName = $"field_metadata_import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv"
                 };
 
-                // Get all existing field names to check for duplicates
-                var existingFields = await _repository.GetAllFieldNamesAsync();
-                var existingFieldsSet = new HashSet<string>(existingFields.Select(f => f.ToUpper()), StringComparer.OrdinalIgnoreCase);
+            // Get all existing field names to check for duplicates
+            var existingRecords = await _repository.GetAllAsync(null, null, null, 1, 100000);
 
-                // Process each row
-                foreach (var row in rows)
+            var existingRowSet = new HashSet<string>(
+                existingRecords.Select(e =>
+                    $"{e.FieldName}|{e.DataElement}|{e.Description}|{e.KeyField}|{e.CheckTable}|{e.DataType}|{e.FieldLength}|{e.Decimals}|{e.HasDropdown}|{e.UIAssignmentBlock}|{e.Subject}"
+                ),
+                StringComparer.OrdinalIgnoreCase
+            );
+
+            var fileRowSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            // Process each row
+            foreach (var row in rows)
                 {
                     var result = new ImportRowResult { FieldName = row.Field };
 
@@ -406,19 +414,33 @@
                             continue;
                         }
 
-                        // Check for duplicate in database
-                        if (existingFieldsSet.Contains(normalizedFieldName))
-                        {
-                            result.ImportStatus = "FAILED";
-                            result.ErrorCode = "DUPLICATE_FIELD";
-                            result.ErrorMessage = $"Field metadata with FieldName '{normalizedFieldName}' already exists";
-                            response.Failed++;
-                            row.Result = result;
-                            continue;
-                        }
+                    // Check for duplicate in database
+                    var createDto = TransformCsvRowToDto(row, normalizedFieldName);
+                    var rowKey = BuildRowKey(createDto);
 
-                        // Transform and validate the record
-                        var createDto = TransformCsvRowToDto(row, normalizedFieldName);
+                    // Duplicate inside uploaded file
+                    if (fileRowSet.Contains(rowKey))
+                    {
+                        result.ImportStatus = "SKIPPED";
+                        result.ErrorCode = "DUPLICATE_IN_FILE";
+                        result.ErrorMessage = "Duplicate row in file ignored";
+                        response.Skipped++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                    // Duplicate already in database
+                    if (existingRowSet.Contains(rowKey))
+                    {
+                        result.ImportStatus = "FAILED";
+                        result.ErrorCode = "DUPLICATE_ROW";
+                        result.ErrorMessage = "Full row already exists in database";
+                        response.Failed++;
+                        row.Result = result;
+                        continue;
+                    }
+
+                  
 
                         var validationResult = await validator.ValidateAsync(createDto);
                         if (!validationResult.IsValid)
@@ -434,9 +456,11 @@
 
                         // Attempt to insert
                         await _repository.CreateAsync(MapDtoToModel(createDto));
-                        existingFieldsSet.Add(normalizedFieldName); // Add to local set to prevent duplicates within same batch
 
-                        result.ImportStatus = "SUCCESS";
+                    fileRowSet.Add(rowKey);
+                    existingRowSet.Add(rowKey);
+
+                    result.ImportStatus = "SUCCESS";
                         result.ErrorCode = "";
                         result.ErrorMessage = "";
                         response.Inserted++;
@@ -524,8 +548,12 @@
                     Subject = dto.Subject,
                 };
             }
+        private string BuildRowKey(CreateFieldMetadataDto dto)
+        {
+            return $"{dto.FieldName}|{dto.DataElement}|{dto.Description}|{dto.KeyField}|{dto.CheckTable}|{dto.DataType}|{dto.FieldLength}|{dto.Decimals}|{dto.HasDropdown}|{dto.UIAssignmentBlock}|{dto.Subject}";
+        }
 
-            private byte[] GenerateResultCsv(List<CsvImportRow> rows)
+        private byte[] GenerateResultCsv(List<CsvImportRow> rows)
             {
                 var sb = new StringBuilder();
 
