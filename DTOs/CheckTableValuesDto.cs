@@ -17,13 +17,8 @@ namespace FieldMetadataAPI.DTOs
     }
     public class CreateCheckTableValueDto
     {
-        [Required(ErrorMessage = "Table name is required")]
-        [StringLength(50)]
         public string? CheckTableName { get; set; }
-        [Required(ErrorMessage = "Key Value is required")]
-        [StringLength(100)]
         public string? KeyValue { get; set; }
-        [Required(ErrorMessage = "Description is required")]
         public string? Description { get; set; }
         public object? AdditionalInfo { get; set; }
         public bool IsActive { get; set; }
@@ -47,4 +42,15 @@ namespace FieldMetadataAPI.DTOs
         public IFormFile File { get; set; }
     }
 
+    public class CheckTableValueImportRowDto
+    {
+        public string? KeyValue { get; set; }
+        public string? Description { get; set; }
+        public string? AdditionalInfo { get; set; }
+        public int RowNumber { get; set; }   // for error response
+    }
+    public class CheckTableQueryDto
+    {
+        public string? TableName { get; set; }
+    }
 }
