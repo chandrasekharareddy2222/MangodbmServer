@@ -1,3 +1,5 @@
+using CsvHelper.Configuration.Attributes;
+
 namespace FieldMetadataAPI.DTOs
 {
     /// <summary>
@@ -42,6 +44,8 @@ namespace FieldMetadataAPI.DTOs
         public string? Decimals { get; set; }
         public string? PossibleValues { get; set; }
         public string? Subject { get; set; }
+        
+        public string UIAssignmentBlock { get; set; }
 
         // Track result
         public ImportRowResult Result { get; set; } = new();
