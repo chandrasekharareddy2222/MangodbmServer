@@ -361,134 +361,90 @@
                 return rowsAffected;
             }
 
-            public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator)
+        public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator)
+        {
+            _logger.LogInformation("Starting CSV import with tracking for {Count} records", rows.Count);
+
+            var response = new CsvImportResponse
             {
-                _logger.LogInformation("Starting CSV import with tracking for {Count} records", rows.Count);
-
-                var response = new CsvImportResponse
-                {
-                    TotalRecords = rows.Count,
-                    ResultFileName = $"field_metadata_import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv"
-                };
-
-            // Get all existing field names to check for duplicates
-            var existingRecords = await _repository.GetAllAsync(null, null, null, 1, 100000);
-
-            var existingRowSet = new HashSet<string>(
-                existingRecords.Select(e =>
-                    $"{e.FieldName}|{e.DataElement}|{e.Description}|{e.KeyField}|{e.CheckTable}|{e.DataType}|{e.FieldLength}|{e.Decimals}|{e.HasDropdown}|{e.UIAssignmentBlock}|{e.Subject}"
-                ),
-                StringComparer.OrdinalIgnoreCase
-            );
-
-            var fileRowSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                TotalRecords = rows.Count,
+                ResultFileName = $"field_metadata_import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv"
+            };
 
             // Process each row
             foreach (var row in rows)
+            {
+                var result = new ImportRowResult { FieldName = row.Field };
+
+                try
                 {
-                    var result = new ImportRowResult { FieldName = row.Field };
-
-                    try
-                    {
-                        // Check if field name is provided
-                        if (string.IsNullOrWhiteSpace(row.Field))
-                        {
-                            result.ImportStatus = "FAILED";
-                            result.ErrorCode = "VALIDATION_ERROR";
-                            result.ErrorMessage = "Field name is required";
-                            response.Failed++;
-                            row.Result = result;
-                            continue;
-                        }
-
-                        string normalizedFieldName = row.Field.Trim().ToUpper();
-
-                        // Check if row was already successfully imported (re-upload scenario)
-                        if (result.ImportStatus == "SUCCESS")
-                        {
-                            result.ImportStatus = "SKIPPED";
-                            result.ErrorCode = "";
-                            result.ErrorMessage = "Record previously imported successfully";
-                            response.Skipped++;
-                            row.Result = result;
-                            continue;
-                        }
-
-                    // Check for duplicate in database
-                    var createDto = TransformCsvRowToDto(row, normalizedFieldName);
-                    var rowKey = BuildRowKey(createDto);
-
-                    // Duplicate inside uploaded file
-                    if (fileRowSet.Contains(rowKey))
-                    {
-                        result.ImportStatus = "SKIPPED";
-                        result.ErrorCode = "DUPLICATE_IN_FILE";
-                        result.ErrorMessage = "Duplicate row in file ignored";
-                        response.Skipped++;
-                        row.Result = result;
-                        continue;
-                    }
-
-                    // Duplicate already in database
-                    if (existingRowSet.Contains(rowKey))
+                    if (string.IsNullOrWhiteSpace(row.Field))
                     {
                         result.ImportStatus = "FAILED";
-                        result.ErrorCode = "DUPLICATE_ROW";
-                        result.ErrorMessage = "Full row already exists in database";
+                        result.ErrorCode = "VALIDATION_ERROR";
+                        result.ErrorMessage = "Field name is required";
                         response.Failed++;
                         row.Result = result;
+                        response.RowResults.Add(result);
                         continue;
                     }
 
-                  
+                    string normalizedFieldName = row.Field.Trim().ToUpper();
 
-                        var validationResult = await validator.ValidateAsync(createDto);
-                        if (!validationResult.IsValid)
-                        {
-                            var validationErrors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
-                            result.ImportStatus = "FAILED";
-                            result.ErrorCode = "VALIDATION_ERROR";
-                            result.ErrorMessage = validationErrors;
-                            response.Failed++;
-                            row.Result = result;
-                            continue;
-                        }
+                    // Transform and validate the record
+                    var createDto = TransformCsvRowToDto(row, normalizedFieldName);
 
-                        // Attempt to insert
-                        await _repository.CreateAsync(MapDtoToModel(createDto));
+                    var validationResult = await validator.ValidateAsync(createDto);
 
-                    fileRowSet.Add(rowKey);
-                    existingRowSet.Add(rowKey);
+                    if (!validationResult.IsValid)
+                    {
+                        var validationErrors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+
+                        result.ImportStatus = "FAILED";
+                        result.ErrorCode = "VALIDATION_ERROR";
+                        result.ErrorMessage = validationErrors;
+
+                        response.Failed++;
+                        row.Result = result;
+                        response.RowResults.Add(result);
+                        continue;
+                    }
+
+                    // Insert record
+                    await _repository.CreateAsync(MapDtoToModel(createDto));
 
                     result.ImportStatus = "SUCCESS";
-                        result.ErrorCode = "";
-                        result.ErrorMessage = "";
-                        response.Inserted++;
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Unexpected error processing row {FieldName}", row.Field);
-                        result.ImportStatus = "FAILED";
-                        result.ErrorCode = "SYSTEM_ERROR";
-                        result.ErrorMessage = $"Unexpected error: {ex.Message}";
-                        response.Failed++;
-                    }
+                    result.ErrorCode = "";
+                    result.ErrorMessage = "";
 
-                    row.Result = result;
-                    response.RowResults.Add(result);
+                    response.Inserted++;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Unexpected error processing row {FieldName}", row.Field);
+
+                    result.ImportStatus = "FAILED";
+                    result.ErrorCode = "SYSTEM_ERROR";
+                    result.ErrorMessage = $"Unexpected error: {ex.Message}";
+
+                    response.Failed++;
                 }
 
-                // Generate result CSV file
-                response.ResultFileContent = GenerateResultCsv(rows);
-                response.Message = $"CSV import completed. {response.Inserted} record(s) inserted, {response.Failed} failed, {response.Skipped} skipped.";
-
-                _logger.LogInformation("CSV import completed: Inserted={Inserted}, Failed={Failed}, Skipped={Skipped}", 
-                    response.Inserted, response.Failed, response.Skipped);
-
-                return response;
+                row.Result = result;
+                response.RowResults.Add(result);
             }
 
-            private CreateFieldMetadataDto TransformCsvRowToDto(CsvImportRow row, string normalizedFieldName)
+            // Generate result CSV file
+            response.ResultFileContent = GenerateResultCsv(rows);
+
+            response.Message = $"CSV import completed. {response.Inserted} record(s) inserted, {response.Failed} failed.";
+
+            _logger.LogInformation("CSV import completed: Inserted={Inserted}, Failed={Failed}",
+                response.Inserted, response.Failed);
+
+            return response;
+        }
+        private CreateFieldMetadataDto TransformCsvRowToDto(CsvImportRow row, string normalizedFieldName)
             {
                 string? uiAssignmentBlock =string.IsNullOrWhiteSpace(row.UIAssignmentBlock?.Trim())? null: row.UIAssignmentBlock.Trim();
                 string? dataElement = string.IsNullOrWhiteSpace(row.DataElement?.Trim()) ? null : row.DataElement.Trim();
@@ -548,12 +504,8 @@
                     Subject = dto.Subject,
                 };
             }
-        private string BuildRowKey(CreateFieldMetadataDto dto)
-        {
-            return $"{dto.FieldName}|{dto.DataElement}|{dto.Description}|{dto.KeyField}|{dto.CheckTable}|{dto.DataType}|{dto.FieldLength}|{dto.Decimals}|{dto.HasDropdown}|{dto.UIAssignmentBlock}|{dto.Subject}";
-        }
 
-        private byte[] GenerateResultCsv(List<CsvImportRow> rows)
+            private byte[] GenerateResultCsv(List<CsvImportRow> rows)
             {
                 var sb = new StringBuilder();
 

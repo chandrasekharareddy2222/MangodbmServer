@@ -22,6 +22,7 @@ namespace FieldMetadataAPI.Repositories
         Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates);
         Task<List<string>> GetAllFieldNamesAsync();
         Task<IEnumerable<string>> GetActiveCheckTablesAsync();
+        Task<List<FieldMetadata>> GetAllRecordsAsync();
     }
 
     /// <summary>
@@ -244,7 +245,8 @@ namespace FieldMetadataAPI.Repositories
             {
                 // Result Set 1: Field Metadata
                 var metadata = (await multi.ReadAsync<FieldMetadata>())
-                    .ToDictionary(m => m.FieldName);
+    .GroupBy(m => m.FieldName)
+    .ToDictionary(g => g.Key, g => g.First());
 
                 // Result Set 2: Check Table Values
                 var checkTableValues = (await multi.ReadAsync<CheckTableValue>())
@@ -332,7 +334,37 @@ namespace FieldMetadataAPI.Repositories
             var fieldNames = await connection.QueryAsync<string>(sql);
             return fieldNames.ToList();
         }
-        
+        public async Task<List<FieldMetadata>> GetAllRecordsAsync()
+        {
+            using var connection = _connectionFactory.CreateConnection();
+
+            var sql = @"
+        SELECT 
+            FieldName,
+            DataElement,
+            Description,
+            KeyField,
+            CheckTable,
+            DataType,
+            FieldLength,
+            Decimals,
+            ValidationType,
+            HasDropdown,
+            IsMandatory,
+            UIAssignmentBlock,
+            Subject,
+            UIControlType,
+            IsActive,
+            CreatedDate
+        FROM Field_Metadata
+        WHERE IsActive = 1";
+
+            _logger.LogInformation("Fetching all field metadata records for duplicate row validation");
+
+            var records = await connection.QueryAsync<FieldMetadata>(sql);
+            return records.ToList();
+        }
+
         public async Task<IEnumerable<string>> GetActiveCheckTablesAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
