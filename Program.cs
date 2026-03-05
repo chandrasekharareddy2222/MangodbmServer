@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
-
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)

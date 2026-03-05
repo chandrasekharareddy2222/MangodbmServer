@@ -12,7 +12,8 @@ namespace FieldMetadataAPI.Services
         Task<int> CreateAsync(CreateCheckTableValueDto dto);
         Task<bool> UpdateAsync(int id, UpdateCheckTableValueDto dto);
         Task<bool> DeleteAsync(int id);
-        Task<bool> UploadCsvAsync(string tableName, IFormFile file);
+        Task<(int inserted, int skipped)> ImportValuesAsync(string tableName, List<CreateCheckTableValueDto> dtos);
+
     }
     public class CheckTableValueService : ICheckTableValueService
     {
@@ -29,6 +30,14 @@ namespace FieldMetadataAPI.Services
             _repository = repository;
             _logger = logger;
             _fieldMetadataService = fieldMetadataService ?? throw new ArgumentNullException(nameof(fieldMetadataService));
+        }
+        private static bool IsAnyRequiredEmpty(string? key, string? desc, string? addi)
+        {
+            // Change required rules here:
+            // If you want only KeyValue required -> return string.IsNullOrWhiteSpace(key);
+            return string.IsNullOrWhiteSpace(key)
+                || string.IsNullOrWhiteSpace(desc)
+                || string.IsNullOrWhiteSpace(addi);
         }
 
         public async Task<List<CheckTableValueDto>> GetByTableNameAsync(string tableName)
@@ -115,47 +124,32 @@ namespace FieldMetadataAPI.Services
             
             return deleted;
         }
-        public async Task<bool> UploadCsvAsync(string tableName, IFormFile file)
+        public async Task<(int inserted, int skipped)> ImportValuesAsync(string tableName, List<CreateCheckTableValueDto> dtos)
         {
-            if (file == null || file.Length == 0)
-                throw new Exception("File is empty");
+            int inserted = 0;
+            int skipped = 0;
 
-            using var reader = new StreamReader(file.OpenReadStream());
-            var list = new List<CheckTableValue>();
-            bool isHeader = true;
-
-            while (!reader.EndOfStream)
+            foreach (var dto in dtos)
             {
-                var line = await reader.ReadLineAsync();
-                if (isHeader) { isHeader = false; continue; }
-                if (string.IsNullOrWhiteSpace(line)) continue;
-
-                var columns = line.Split(',');
-
-                list.Add(new CheckTableValue
+                if (string.IsNullOrWhiteSpace(dto.KeyValue))
                 {
-                    CheckTableName = tableName,
-                    KeyValue = columns[0].Trim(),
-                    Description = columns.Length > 1 ? columns[1].Trim() : null,
-                    AdditionalInfo = columns.Length > 2 ? columns[2].Trim() : null,
-                    IsActive = true,
-                    ValidFrom = DateTime.Now,
-                    ValidTo = DateTime.Parse("9999-12-31"),
-                    CreatedBy = "CSV_UPLOAD"
-                });
+                    skipped++;
+                    continue;
+                }
+
+                // Use your existing repository method
+                await _repository.InsertFromUploadAsync(
+                    tableName,
+                    dto.KeyValue,
+                    dto.Description,
+                    dto.AdditionalInfo?.ToString(),
+                    "FILE_IMPORT"
+                );
+                inserted++;
             }
 
-            // FIX: You must actually send this list to the database!
-            foreach (var item in list)
-            {
-                await _repository.CreateAsync(item);
-            }
-            
-            // Clear field metadata cache since multiple check table values have been added
             _fieldMetadataService.ClearAllCaches();
-            _logger.LogInformation("Cleared field metadata cache after CSV upload for table {TableName} with {Count} records", tableName, list.Count);
-
-            return true;
+            return (inserted, skipped);
         }
 
     }

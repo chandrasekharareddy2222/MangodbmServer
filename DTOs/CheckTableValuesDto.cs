@@ -1,4 +1,6 @@
-﻿namespace FieldMetadataAPI.DTOs
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace FieldMetadataAPI.DTOs
 {
     public class CheckTableValuesDto
     {
@@ -40,4 +42,15 @@
         public IFormFile File { get; set; }
     }
 
+    public class CheckTableValueImportRowDto
+    {
+        public string? KeyValue { get; set; }
+        public string? Description { get; set; }
+        public string? AdditionalInfo { get; set; }
+        public int RowNumber { get; set; }   // for error response
+    }
+    public class CheckTableQueryDto
+    {
+        public string? TableName { get; set; }
+    }
 }
