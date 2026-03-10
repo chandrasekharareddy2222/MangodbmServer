@@ -11,6 +11,7 @@ namespace FieldMetadataAPI.Mappings
             Map(m => m.DataElement).Name("Data element").Optional();
             Map(m => m.Description).Name("Description").Optional();
             Map(m => m.KeyField).Name("Key Field").Optional();
+            Map(m => m.Coordinate).Name("Coordinate").Optional();
             Map(m => m.CheckTable).Name("Checktable").Optional();
             Map(m => m.DataType).Name("Datatype");
             Map(m => m.FieldLength).Name("Length").Optional();

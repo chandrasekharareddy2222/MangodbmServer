@@ -84,5 +84,9 @@ namespace FieldMetadataAPI.Models
         /// Subject
         /// </summary>
         public string? Subject { get; set; }
+        /// <summary>
+        /// Coordinate
+        /// </summary>
+        public string? Coordinate { get; set; }
     }
 }

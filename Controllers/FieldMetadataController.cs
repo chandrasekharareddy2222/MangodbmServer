@@ -303,6 +303,7 @@ namespace FieldMetadataAPI.Controllers
                                     Datatype = row["Data Type"]?.ToString(),
                                     Length = row["Length"]?.ToString(),
                                     Decimals = row["Decimals"]?.ToString(),
+                                    Coordinate = row["Coordinate"]?.ToString(),
                                     Description = row["Short Description"]?.ToString(),
                                     Checktable = row["Check Table"]?.ToString(),
                                     PossibleValues = row["Possible values"]?.ToString(),

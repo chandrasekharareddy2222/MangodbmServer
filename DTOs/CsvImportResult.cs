@@ -46,6 +46,7 @@ namespace FieldMetadataAPI.DTOs
         public string? Subject { get; set; }
         
         public string UIAssignmentBlock { get; set; }
+        public string? Coordinate { get; set; }
 
         // Track result
         public ImportRowResult Result { get; set; } = new();

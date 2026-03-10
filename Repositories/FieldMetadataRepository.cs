@@ -1,8 +1,9 @@
 using Dapper;
 using FieldMetadataAPI.Data;
 using FieldMetadataAPI.Models;
-using System.Data;
+using Microsoft.Data.SqlClient;
 using Serilog.Parsing;
+using System.Data;
 
 namespace FieldMetadataAPI.Repositories
 {
@@ -23,6 +24,7 @@ namespace FieldMetadataAPI.Repositories
         Task<List<string>> GetAllFieldNamesAsync();
         Task<IEnumerable<string>> GetActiveCheckTablesAsync();
         Task<List<FieldMetadata>> GetAllRecordsAsync();
+        Task BulkInsertAsync(List<FieldMetadata> records);
     }
 
     /// <summary>
@@ -32,7 +34,67 @@ namespace FieldMetadataAPI.Repositories
     {
         private readonly IDbConnectionFactory _connectionFactory;
         private readonly ILogger<FieldMetadataRepository> _logger;
+        public async Task BulkInsertAsync(List<FieldMetadata> records)
+        {
+            using var connection = (SqlConnection)_connectionFactory.CreateConnection();
+            await connection.OpenAsync();
 
+            var table = new DataTable();
+
+            table.Columns.Add("FieldName", typeof(string));
+            table.Columns.Add("DataElement", typeof(string));
+            table.Columns.Add("Description", typeof(string));
+            table.Columns.Add("KeyField", typeof(string));
+            table.Columns.Add("Coordinate", typeof(string));
+            table.Columns.Add("CheckTable", typeof(string));
+            table.Columns.Add("DataType", typeof(string));
+            table.Columns.Add("FieldLength", typeof(int));
+            table.Columns.Add("Decimals", typeof(int));
+            table.Columns.Add("HasDropdown", typeof(string));
+            table.Columns.Add("UIAssignmentBlock", typeof(string));
+            table.Columns.Add("Subject", typeof(string));
+
+            foreach (var r in records)
+            {
+                table.Rows.Add(
+                    r.FieldName,
+                    r.DataElement,
+                    r.Description,
+                    r.KeyField,
+                    r.Coordinate,
+                    r.CheckTable,
+                    r.DataType,
+                    r.FieldLength,
+                    r.Decimals,
+                    r.HasDropdown,
+                    r.UIAssignmentBlock,
+                    r.Subject
+                );
+            }
+
+            using var bulk = new SqlBulkCopy(connection)
+            {
+                DestinationTableName = "Field_Metadata",
+                BatchSize = 1000,
+                BulkCopyTimeout = 0
+            };
+
+            // ⭐ Explicit column mapping
+            bulk.ColumnMappings.Add("FieldName", "FieldName");
+            bulk.ColumnMappings.Add("DataElement", "DataElement");
+            bulk.ColumnMappings.Add("Description", "Description");
+            bulk.ColumnMappings.Add("KeyField", "KeyField");
+            bulk.ColumnMappings.Add("Coordinate", "Coordinate");
+            bulk.ColumnMappings.Add("CheckTable", "CheckTable");
+            bulk.ColumnMappings.Add("DataType", "DataType");
+            bulk.ColumnMappings.Add("FieldLength", "FieldLength");
+            bulk.ColumnMappings.Add("Decimals", "Decimals");
+            bulk.ColumnMappings.Add("HasDropdown", "HasDropdown");
+            bulk.ColumnMappings.Add("UIAssignmentBlock", "UIAssignmentBlock");
+            bulk.ColumnMappings.Add("Subject", "Subject");
+
+            await bulk.WriteToServerAsync(table);
+        }
         public FieldMetadataRepository(IDbConnectionFactory connectionFactory, ILogger<FieldMetadataRepository> logger)
         {
             _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
@@ -49,6 +111,7 @@ namespace FieldMetadataAPI.Repositories
                     DataElement,
                     Description,
                     KeyField,
+                    Coordinate,
                     CheckTable,
                     DataType,
                     FieldLength,
@@ -115,6 +178,7 @@ namespace FieldMetadataAPI.Repositories
                     DataElement,
                     Description,
                     KeyField,
+                    Coordinate,
                     CheckTable,
                     DataType,
                     FieldLength,
@@ -147,6 +211,7 @@ namespace FieldMetadataAPI.Repositories
                     DataElement,
                     Description,
                     KeyField,
+                    Coordinate,
                     CheckTable,
                     DataType,
                     FieldLength,
@@ -163,6 +228,7 @@ namespace FieldMetadataAPI.Repositories
                     @DataElement,
                     @Description,
                     @KeyField,
+                    @Coordinate,
                     @CheckTable,
                     @DataType,
                     @FieldLength,
@@ -281,44 +347,30 @@ namespace FieldMetadataAPI.Repositories
         public async Task<int> BulkUpdateMandatoryAsync(List<(string FieldName, bool IsMandatory)> updates)
         {
             using var connection = _connectionFactory.CreateConnection();
-            
-            // IsMandatory is a computed column based on KeyField
-            // If isMandatory = true, set KeyField = 'X'
-            // If isMandatory = false, set KeyField = NULL
-            
-            var sql = @"
-                UPDATE Field_Metadata
-                SET KeyField = @KeyField
-                WHERE FieldName = @FieldName
-                AND IsActive = 1";
 
-            _logger.LogInformation("Bulk updating IsMandatory for {Count} field(s)", updates.Count);
+            var table = new DataTable();
+            table.Columns.Add("FieldName", typeof(string));
+            table.Columns.Add("IsMandatory", typeof(bool));
 
-            var totalRowsAffected = 0;
-
-            foreach (var (fieldName, isMandatory) in updates)
+            foreach (var update in updates)
             {
-                var keyFieldValue = isMandatory ? "X" : null;
-                
-                var rowsAffected = await connection.ExecuteAsync(sql, new 
-                { 
-                    KeyField = keyFieldValue,
-                    FieldName = fieldName
-                });
-
-                totalRowsAffected += rowsAffected;
-                
-                if (rowsAffected > 0)
-                {
-                    _logger.LogInformation("Updated {FieldName}: IsMandatory = {IsMandatory}", fieldName, isMandatory);
-                }
+                table.Rows.Add(update.FieldName, update.IsMandatory);
             }
 
-            _logger.LogInformation("Successfully updated {RowsAffected} record(s)", totalRowsAffected);
+            var parameters = new DynamicParameters();
+            parameters.Add(
+                "@Updates",
+                table.AsTableValuedParameter("FieldMandatoryUpdateType")
+            );
 
-            return totalRowsAffected;
+            var rowsAffected = await connection.ExecuteAsync(
+                "sp_BulkUpdateMandatoryFields",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
+
+            return rowsAffected;
         }
-
         public async Task<List<string>> GetAllFieldNamesAsync()
         {
             using var connection = _connectionFactory.CreateConnection();
@@ -344,6 +396,7 @@ namespace FieldMetadataAPI.Repositories
             DataElement,
             Description,
             KeyField,
+            Coordinate, 
             CheckTable,
             DataType,
             FieldLength,

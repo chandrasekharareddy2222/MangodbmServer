@@ -1,16 +1,18 @@
+    using CsvHelper;
+    using CsvHelper.Configuration;
+    using ExcelDataReader;
     using FieldMetadataAPI.DTOs;
     using FieldMetadataAPI.Models;
     using FieldMetadataAPI.Repositories;
-    using FluentValidation;
-    using System.Text;
-    using Microsoft.AspNetCore.Mvc;
     using FieldMetadataAPI.Services;
-    using CsvHelper;
-    using CsvHelper.Configuration;
-    using System.Globalization;
-    using ExcelDataReader;
-    using System.Data;
+    using FluentValidation;
+using Microsoft.AspNetCore.Connections;
+    using Microsoft.AspNetCore.Mvc;
+using Microsoft.Data.SqlClient;
     using Microsoft.Extensions.Caching.Memory;
+    using System.Data;
+    using System.Globalization;
+    using System.Text;
 
     namespace FieldMetadataAPI.Services
     {
@@ -19,6 +21,7 @@
         /// </summary>
         public interface IFieldMetadataService
         {
+            
             Task<PagedResponse<FieldMetadataDto>> GetAllAsync(FieldMetadataQueryDto query);
             Task<FieldMetadataDto?> GetByIdAsync(string fieldName);
             Task<FieldMetadataDto> CreateAsync(CreateFieldMetadataDto createDto);
@@ -232,6 +235,7 @@
                     FieldName = entity.FieldName,
                     DataElement = entity.DataElement,
                     Description = entity.Description,
+                    Coordinate = entity.Coordinate,
                     KeyField = entity.KeyField,
                     CheckTable = entity.CheckTable,
                     DataType = entity.DataType,
@@ -330,24 +334,17 @@
                 _logger.LogInformation("Bulk updating IsMandatory for {Count} field(s)", bulkUpdateDto.Updates.Count);
 
                 // Validate that all field names exist and build the updates list
-                var validUpdates = new List<(string FieldName, bool IsMandatory)>();
+               
                 var skippedCount = 0;
 
-                foreach (var update in bulkUpdateDto.Updates)
-                {
-                    var exists = await _repository.ExistsAsync(update.FieldName);
-                    if (exists)
-                    {
-                        validUpdates.Add((update.FieldName, update.IsMandatory));
-                    }
-                    else
-                    {
-                        _logger.LogWarning("FieldName '{FieldName}' not found or inactive, skipping", update.FieldName);
-                        skippedCount++;
-                    }
-                }
+            var allFields = await _repository.GetAllFieldNamesAsync();
 
-                if (validUpdates.Count == 0)
+            var validUpdates = bulkUpdateDto.Updates
+                .Where(u => allFields.Contains(u.FieldName))
+                .Select(u => (u.FieldName, u.IsMandatory))
+                .ToList();
+
+            if (validUpdates.Count == 0)
                 {
                     _logger.LogWarning("No valid field names found for update");
                     return 0;
@@ -360,6 +357,7 @@
 
                 return rowsAffected;
             }
+       
 
         public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator)
         {
@@ -372,6 +370,8 @@
             };
 
             // Process each row
+            var validEntities = new List<FieldMetadata>();
+
             foreach (var row in rows)
             {
                 var result = new ImportRowResult { FieldName = row.Field };
@@ -383,6 +383,7 @@
                         result.ImportStatus = "FAILED";
                         result.ErrorCode = "VALIDATION_ERROR";
                         result.ErrorMessage = "Field name is required";
+
                         response.Failed++;
                         row.Result = result;
                         response.RowResults.Add(result);
@@ -391,7 +392,6 @@
 
                     string normalizedFieldName = row.Field.Trim().ToUpper();
 
-                    // Transform and validate the record
                     var createDto = TransformCsvRowToDto(row, normalizedFieldName);
 
                     var validationResult = await validator.ValidateAsync(createDto);
@@ -410,12 +410,9 @@
                         continue;
                     }
 
-                    // Insert record
-                    await _repository.CreateAsync(MapDtoToModel(createDto));
+                    validEntities.Add(MapDtoToModel(createDto));
 
                     result.ImportStatus = "SUCCESS";
-                    result.ErrorCode = "";
-                    result.ErrorMessage = "";
 
                     response.Inserted++;
                 }
@@ -425,13 +422,17 @@
 
                     result.ImportStatus = "FAILED";
                     result.ErrorCode = "SYSTEM_ERROR";
-                    result.ErrorMessage = $"Unexpected error: {ex.Message}";
+                    result.ErrorMessage = ex.Message;
 
                     response.Failed++;
                 }
 
                 row.Result = result;
                 response.RowResults.Add(result);
+            }
+            if (validEntities.Count > 0)
+            {
+                await _repository.BulkInsertAsync(validEntities);
             }
 
             // Generate result CSV file
@@ -455,9 +456,10 @@
                 int? fieldLength = int.TryParse(row.Length, out var len) && len > 0 ? len : null;
                 int? decimals = int.TryParse(row.Decimals, out var dec) && dec >= 0 ? dec : null;
                 string? subject = string.IsNullOrWhiteSpace(row.Subject?.Trim())? null : row.Subject.Trim();
+            string? coordinate = string.IsNullOrWhiteSpace(row.Coordinate?.Trim())? null: row.Coordinate.Trim();
 
-                // Handle HasDropdown: if PossibleValues contains "Possible values", set to 'X'
-                string? hasDropdown = null;
+            // Handle HasDropdown: if PossibleValues contains "Possible values", set to 'X'
+            string? hasDropdown = null;
                 if (!string.IsNullOrWhiteSpace(row.PossibleValues?.Trim()))
                 {
                     string normalized = row.PossibleValues.Trim().ToLower();
@@ -482,7 +484,8 @@
                     Decimals = decimals,
                     HasDropdown = hasDropdown,
                     UIAssignmentBlock = uiAssignmentBlock,
-                    Subject = subject
+                    Subject = subject,
+                    Coordinate = coordinate
                 };
             }
 
@@ -495,6 +498,7 @@
                     DataElement = dto.DataElement,
                     Description = dto.Description,
                     KeyField = dto.KeyField,
+                    Coordinate = dto.Coordinate,
                     CheckTable = dto.CheckTable,
                     DataType = dto.DataType,
                     FieldLength = dto.FieldLength,
