@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Mvc.Versioning;
 using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
 // Configure Serilog
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
@@ -86,6 +87,8 @@ builder.Services.AddScoped<IMaterialService, MaterialService>();
 builder.Services.AddScoped<ICheckTableValueService, CheckTableValueService>();
 builder.Services.AddScoped<ICheckTableValueRepository, CheckTableValueRepository>();
 
+builder.Services.AddScoped<IMaterialTypeRepository, MaterialTypeRepository>();
+builder.Services.AddScoped<IMaterialTypeService, MaterialTypeService>();
 // Add Health Checks
 builder.Services.AddHealthChecks();
 
