@@ -24,7 +24,8 @@ namespace FieldMetadataAPI.Repositories
         Task<List<string>> GetAllFieldNamesAsync();
         Task<IEnumerable<string>> GetActiveCheckTablesAsync();
         Task<List<FieldMetadata>> GetAllRecordsAsync();
-        Task BulkInsertAsync(List<FieldMetadata> records);
+        Task<(int totalRows, int insertedRows, int duplicateRows)> BulkInsertWithTVPAsync(List<FieldMetadata> records);
+      
     }
 
     /// <summary>
@@ -34,10 +35,10 @@ namespace FieldMetadataAPI.Repositories
     {
         private readonly IDbConnectionFactory _connectionFactory;
         private readonly ILogger<FieldMetadataRepository> _logger;
-        public async Task BulkInsertAsync(List<FieldMetadata> records)
+        
+        public async Task<(int totalRows, int insertedRows, int duplicateRows)> BulkInsertWithTVPAsync(List<FieldMetadata> records)
         {
             using var connection = (SqlConnection)_connectionFactory.CreateConnection();
-            await connection.OpenAsync();
 
             var table = new DataTable();
 
@@ -72,28 +73,20 @@ namespace FieldMetadataAPI.Repositories
                 );
             }
 
-            using var bulk = new SqlBulkCopy(connection)
-            {
-                DestinationTableName = "Field_Metadata",
-                BatchSize = 1000,
-                BulkCopyTimeout = 0
-            };
+            var parameters = new DynamicParameters();
+            parameters.Add("@Records", table.AsTableValuedParameter("FieldMetadataBulkType"));
 
-            // ⭐ Explicit column mapping
-            bulk.ColumnMappings.Add("FieldName", "FieldName");
-            bulk.ColumnMappings.Add("DataElement", "DataElement");
-            bulk.ColumnMappings.Add("Description", "Description");
-            bulk.ColumnMappings.Add("KeyField", "KeyField");
-            bulk.ColumnMappings.Add("Coordinate", "Coordinate");
-            bulk.ColumnMappings.Add("CheckTable", "CheckTable");
-            bulk.ColumnMappings.Add("DataType", "DataType");
-            bulk.ColumnMappings.Add("FieldLength", "FieldLength");
-            bulk.ColumnMappings.Add("Decimals", "Decimals");
-            bulk.ColumnMappings.Add("HasDropdown", "HasDropdown");
-            bulk.ColumnMappings.Add("UIAssignmentBlock", "UIAssignmentBlock");
-            bulk.ColumnMappings.Add("Subject", "Subject");
+            var result = await connection.QueryFirstAsync(
+                "sp_BulkInsertFieldMetadata",
+                parameters,
+                commandType: CommandType.StoredProcedure
+            );
 
-            await bulk.WriteToServerAsync(table);
+            return (
+                (int)result.TotalRows,
+                (int)result.InsertedRows,
+                (int)result.DuplicateRows
+            );
         }
         public FieldMetadataRepository(IDbConnectionFactory connectionFactory, ILogger<FieldMetadataRepository> logger)
         {

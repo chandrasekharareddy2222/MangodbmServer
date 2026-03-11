@@ -32,7 +32,8 @@ using Microsoft.Data.SqlClient;
             Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator);
             Task<List<string>> GetActiveCheckTablesAsync();
             Task<List<UiAssignmentBlockDto>> GetStructuredFieldMetadata();
-            void ClearAllCaches();
+        
+        void ClearAllCaches();
     }
 
         /// <summary>
@@ -357,9 +358,11 @@ using Microsoft.Data.SqlClient;
 
                 return rowsAffected;
             }
-       
 
-        public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(List<CsvImportRow> rows, IValidator<CreateFieldMetadataDto> validator)
+
+        public async Task<CsvImportResponse> ImportCsvWithTrackingAsync(
+    List<CsvImportRow> rows,
+    IValidator<CreateFieldMetadataDto> validator)
         {
             _logger.LogInformation("Starting CSV import with tracking for {Count} records", rows.Count);
 
@@ -369,15 +372,18 @@ using Microsoft.Data.SqlClient;
                 ResultFileName = $"field_metadata_import_result_{DateTime.UtcNow:yyyyMMdd_HHmmss}.csv"
             };
 
-            // Process each row
             var validEntities = new List<FieldMetadata>();
 
             foreach (var row in rows)
             {
-                var result = new ImportRowResult { FieldName = row.Field };
+                var result = new ImportRowResult
+                {
+                    FieldName = row.Field
+                };
 
                 try
                 {
+                    // Field name validation
                     if (string.IsNullOrWhiteSpace(row.Field))
                     {
                         result.ImportStatus = "FAILED";
@@ -398,7 +404,8 @@ using Microsoft.Data.SqlClient;
 
                     if (!validationResult.IsValid)
                     {
-                        var validationErrors = string.Join("; ", validationResult.Errors.Select(e => e.ErrorMessage));
+                        var validationErrors = string.Join("; ",
+                            validationResult.Errors.Select(e => e.ErrorMessage));
 
                         result.ImportStatus = "FAILED";
                         result.ErrorCode = "VALIDATION_ERROR";
@@ -410,11 +417,12 @@ using Microsoft.Data.SqlClient;
                         continue;
                     }
 
-                    validEntities.Add(MapDtoToModel(createDto));
+                    // Map DTO to Entity
+                    var entity = MapDtoToModel(createDto);
 
-                    result.ImportStatus = "SUCCESS";
+                    validEntities.Add(entity);
 
-                    response.Inserted++;
+                    result.ImportStatus = "PENDING"; // Final status after DB insert
                 }
                 catch (Exception ex)
                 {
@@ -430,18 +438,40 @@ using Microsoft.Data.SqlClient;
                 row.Result = result;
                 response.RowResults.Add(result);
             }
+
+            // Bulk insert valid records using TVP
             if (validEntities.Count > 0)
             {
-                await _repository.BulkInsertAsync(validEntities);
+                var dbResult = await _repository.BulkInsertWithTVPAsync(validEntities);
+
+                response.Inserted = dbResult.insertedRows;
+                response.Skipped = dbResult.duplicateRows;
             }
 
-            // Generate result CSV file
+            // Update row statuses after DB execution
+            foreach (var row in rows)
+            {
+                if (row.Result == null)
+                    continue;
+
+                if (row.Result.ImportStatus == "PENDING")
+                {
+                    row.Result.ImportStatus = "SUCCESS";
+                }
+            }
+
+            // Generate result CSV
             response.ResultFileContent = GenerateResultCsv(rows);
 
-            response.Message = $"CSV import completed. {response.Inserted} record(s) inserted, {response.Failed} failed.";
+            response.Message =
+                $"CSV import completed. {response.Inserted} record(s) inserted, {response.Failed} failed, {response.Skipped} skipped.";
 
-            _logger.LogInformation("CSV import completed: Inserted={Inserted}, Failed={Failed}",
-                response.Inserted, response.Failed);
+            _logger.LogInformation(
+                "CSV import completed: Inserted={Inserted}, Failed={Failed}, Skipped={Skipped}",
+                response.Inserted,
+                response.Failed,
+                response.Skipped
+            );
 
             return response;
         }
