@@ -94,12 +94,25 @@ namespace FieldMetadataAPI.Controllers
         /// <returns>List of field metadata with associated lookup values</returns>
         [HttpGet("with-values")]
         [ProducesResponseType(typeof(ApiResponse<List<FieldMetadataWithValuesDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAllWithValues()
+       
+        public async Task<IActionResult> GetAllWithValues([FromQuery] bool structured = false)
         {
-            _logger.LogInformation("GET request received for all field metadata with values");
+            _logger.LogInformation("GET request received for field metadata with values. Structured = {Structured}", structured);
+
+            if (structured)
+            {
+                var structuredResult = await _service.GetStructuredFieldMetadata();
+
+                return Ok(ApiResponse<object>.SuccessResponse(
+                    structuredResult,
+                    "Structured field metadata retrieved successfully"));
+            }
 
             var result = await _service.GetAllWithValuesAsync();
-            return Ok(ApiResponse<List<FieldMetadataWithValuesDto>>.SuccessResponse(result, "Field metadata with values retrieved successfully"));
+
+            return Ok(ApiResponse<object>.SuccessResponse(
+                result,
+                "Field metadata with values retrieved successfully"));
         }
 
         /// <summary>
@@ -290,9 +303,11 @@ namespace FieldMetadataAPI.Controllers
                                     Datatype = row["Data Type"]?.ToString(),
                                     Length = row["Length"]?.ToString(),
                                     Decimals = row["Decimals"]?.ToString(),
+                                    Coordinate = row["Coordinate"]?.ToString(),
                                     Description = row["Short Description"]?.ToString(),
                                     Checktable = row["Check Table"]?.ToString(),
                                     PossibleValues = row["Possible values"]?.ToString(),
+                                    UIAssignmentBlock = row.Table.Columns.Contains("UIAssignmentBlock")? row["UIAssignmentBlock"]?.ToString(): null,
                                     Subject = row.Table.Columns.Contains("Subject")? row["Subject"]?.ToString(): null
                                 });
                             }

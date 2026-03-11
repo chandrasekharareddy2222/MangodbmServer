@@ -21,6 +21,8 @@ namespace FieldMetadataAPI.DTOs
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }
         public string? Subject { get; set; }
+
+        public string? Coordinate { get; set; }
     }
 
     /// <summary>
@@ -41,6 +43,7 @@ namespace FieldMetadataAPI.DTOs
         public bool IsActive { get; set; } = true;
         public string? Subject { get; set; }
         // Note: ValidationType, IsMandatory, UIControlType are computed - not included
+        public string? Coordinate { get; set; }
     }
 
     /// <summary>
@@ -54,6 +57,7 @@ namespace FieldMetadataAPI.DTOs
         public string? UIAssignmentBlock { get; set; }
         public bool IsActive { get; set; }
         public string? Subject { get; set; }
+        public string? Coordinate { get; set; }
     }
 
     /// <summary>
